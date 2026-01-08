@@ -73,16 +73,31 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">软件开发</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#id2">开发环境</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id3">工具链安装</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">地图方案</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">特性</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4">示例</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#api">API 参考</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id4">初始化</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id5">绘图函数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">视频方案</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">特性</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">示例</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id6">示例代码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#d">3D 方案</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id8">特性</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">示例</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">矢量图形方案</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">特性</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">示例</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">流体玻璃方案</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id14">特性</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">示例</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../applications/index.html">应用案例</a><ul>
@@ -144,40 +159,104 @@
              
   <section id="id1">
 <h1>软件开发<a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
-<p>本节介绍软件开发相关内容。</p>
+<p>本节介绍各种显示方案的软件开发。</p>
 <section id="id2">
-<h2>开发环境<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<h2>地图方案<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>基于地图的显示应用开发。</p>
 <section id="id3">
-<h3>工具链安装<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 安装编译工具</span>
-sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>gcc-arm-none-eabi
-
-<span class="c1"># 安装调试工具</span>
-sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>openocd
-</pre></div>
-</div>
+<h3>特性<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>矢量地图渲染</p></li>
+<li><p>多层级缩放</p></li>
+<li><p>实时路径规划</p></li>
+</ul>
 </section>
-</section>
-<section id="api">
-<h2>API 参考<a class="headerlink" href="#api" title="Link to this heading"></a></h2>
 <section id="id4">
-<h3>初始化<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">display_init</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<h3>示例<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">map_init</span><span class="p">();</span>
+<span class="n">map_set_center</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span><span class="w"> </span><span class="n">lon</span><span class="p">);</span>
+<span class="n">map_set_zoom</span><span class="p">(</span><span class="n">level</span><span class="p">);</span>
 </pre></div>
 </div>
+</section>
 </section>
 <section id="id5">
-<h3>绘图函数<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">display_clear</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">display_pixel</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">color</span><span class="p">);</span>
-<span class="kt">void</span><span class="w"> </span><span class="nf">display_text</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">text</span><span class="p">);</span>
+<h2>视频方案<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>视频播放和处理方案。</p>
+<section id="id6">
+<h3>特性<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>H.264 硬件解码</p></li>
+<li><p>多格式支持</p></li>
+<li><p>低延迟播放</p></li>
+</ul>
+</section>
+<section id="id7">
+<h3>示例<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">video_player_init</span><span class="p">();</span>
+<span class="n">video_play</span><span class="p">(</span><span class="s">&quot;demo.mp4&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
 </section>
-<section id="id6">
-<h2>示例代码<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
-<p>查看 examples 目录获取完整示例。</p>
+<section id="d">
+<h2>3D 方案<a class="headerlink" href="#d" title="Link to this heading"></a></h2>
+<p>3D 图形渲染方案。</p>
+<section id="id8">
+<h3>特性<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>OpenGL ES 支持</p></li>
+<li><p>3D 模型加载</p></li>
+<li><p>实时渲染</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>示例<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">gl_init</span><span class="p">();</span>
+<span class="n">model_load</span><span class="p">(</span><span class="s">&quot;object.obj&quot;</span><span class="p">);</span>
+<span class="n">model_render</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id10">
+<h2>矢量图形方案<a class="headerlink" href="#id10" title="Link to this heading"></a></h2>
+<p>SVG 矢量图形渲染。</p>
+<section id="id11">
+<h3>特性<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>SVG 解析</p></li>
+<li><p>无损缩放</p></li>
+<li><p>动画支持</p></li>
+</ul>
+</section>
+<section id="id12">
+<h3>示例<a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">svg_load</span><span class="p">(</span><span class="s">&quot;icon.svg&quot;</span><span class="p">);</span>
+<span class="n">svg_render</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">scale</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id13">
+<h2>流体玻璃方案<a class="headerlink" href="#id13" title="Link to this heading"></a></h2>
+<p>毛玻璃效果和流体动画。</p>
+<section id="id14">
+<h3>特性<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>实时模糊效果</p></li>
+<li><p>流体动画</p></li>
+<li><p>透明度混合</p></li>
+</ul>
+</section>
+<section id="id15">
+<h3>示例<a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">glass_effect_init</span><span class="p">();</span>
+<span class="n">glass_set_blur</span><span class="p">(</span><span class="n">radius</span><span class="p">);</span>
+<span class="n">glass_apply</span><span class="p">(</span><span class="n">region</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
