@@ -7,7 +7,6 @@ Display Wiki 是一个显示技术文档站点，提供硬件平台、软件开�
    :maxdepth: 2
    :caption: 目录
 
-   pages/welcome
    pages/quickstart/index
    pages/hardware/index
    pages/software/index
