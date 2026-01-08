@@ -41,8 +41,12 @@ html_css_files = [
     'css/custom.css',
 ]
 
+html_js_files = [
+    'js/pdf-viewer.js',
+]
+
 html_theme_options = {
-    'collapse_navigation': False,
+    'collapse_navigation': True,
     'logo_only': True,
     'navigation_depth': 10,
     'sticky_navigation': True,

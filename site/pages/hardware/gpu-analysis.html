@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPU 方案分析 &mdash; Display Wiki v0.1 文档</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/auto.number.title.css?v=161e9acd" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=faefd506" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d7bb714b"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/translations.js?v=beaddf03"></script>
+      <script src="../../_static/js/pdf-viewer.js?v=a39b150e"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" />
+    <link rel="next" title="2.5D GPU 与 3D GPU 对比分析" href="2d-vs-3d-gpu.html" />
+    <link rel="prev" title="接口说明" href="interface.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+              <img src="../../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="搜索文档" aria-label="搜索文档" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="导航菜单">
+              <p class="caption" role="heading"><span class="caption-text">目录</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart/index.html">快速开始</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">硬件平台</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="display-specs.html">显示屏规格</a></li>
+<li class="toctree-l2"><a class="reference internal" href="driver-chips.html">驱动芯片</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interface.html">接口说明</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">GPU 方案分析</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">主流嵌入式 GPU 对比</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#arm-mali">ARM Mali 系列</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#mali-g31">Mali-G31</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#mali-g52">Mali-G52</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#mali-g57">Mali-G57</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#imagination-powervr">Imagination PowerVR 系列</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#powervr-ge8300">PowerVR GE8300</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#powervr-ge8320">PowerVR GE8320</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#powervr-gt7400">PowerVR GT7400</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#vivante-gc">Vivante GC 系列</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#gc7000l">GC7000L</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#gc7000ul">GC7000UL</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#gc8000">GC8000</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">性能对比表</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">技术特性对比</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id4">渲染架构</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">功耗效率</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6">驱动支持</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">生态系统</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">应用场景推荐</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#iot">智能手表 / IoT 设备</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id9">车载仪表盘</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id10">车载中控屏</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hmi">工业 HMI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ar-vr">AR/VR 设备</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">软件渲染方案</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id12">方案选择</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id13">优化策略</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id14">性能参考</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">选型建议</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id16">按功耗选择</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id17">按性能选择</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id18">按生态选择</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id19">参考资源</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="2d-vs-3d-gpu.html">2.5D GPU 与 3D GPU 对比分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="camera-analysis.html">Camera 接口方案分析</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../software/index.html">软件开发</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../applications/index.html">应用案例</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../faq/index.html">常见问题</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="移动版导航菜单" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Display Wiki</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="页面导航">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">硬件平台</a></li>
+      <li class="breadcrumb-item active">GPU 方案分析</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gpu">
+<h1>GPU 方案分析<a class="headerlink" href="#gpu" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>主流嵌入式 GPU 对比<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="arm-mali">
+<h3>ARM Mali 系列<a class="headerlink" href="#arm-mali" title="Link to this heading"></a></h3>
+<section id="mali-g31">
+<h4>Mali-G31<a class="headerlink" href="#mali-g31" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Bifrost 第二代</p></li>
+<li><p><strong>核心数</strong>：1-2 核心</p></li>
+<li><p><strong>性能</strong>：1.2 Gpix/s 填充率，50M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：0.3-0.6W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.0, OpenCL 2.0</p></li>
+<li><p><strong>应用场景</strong>：智能手表、IoT 设备、入门级显示</p></li>
+<li><p><strong>优势</strong>：功耗极低，面积小（&lt;1mm²）</p></li>
+<li><p><strong>劣势</strong>：性能有限，不适合复杂 3D</p></li>
+</ul>
+</section>
+<section id="mali-g52">
+<h4>Mali-G52<a class="headerlink" href="#mali-g52" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Bifrost 第二代</p></li>
+<li><p><strong>核心数</strong>：2-4 核心</p></li>
+<li><p><strong>性能</strong>：2.8 Gpix/s 填充率，120M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：1.0-2.0W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1, OpenCL 2.0</p></li>
+<li><p><strong>应用场景</strong>：中端手机、车载显示、工业平板</p></li>
+<li><p><strong>优势</strong>：性能功耗平衡好，支持 HDR</p></li>
+<li><p><strong>劣势</strong>：成本较 G31 高</p></li>
+</ul>
+</section>
+<section id="mali-g57">
+<h4>Mali-G57<a class="headerlink" href="#mali-g57" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Valhall 第一代</p></li>
+<li><p><strong>核心数</strong>：1-6 核心</p></li>
+<li><p><strong>性能</strong>：4.5 Gpix/s 填充率，200M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：1.5-3.0W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1, OpenCL 2.1</p></li>
+<li><p><strong>应用场景</strong>：高端车载、游戏设备、AR/VR</p></li>
+<li><p><strong>优势</strong>：机器学习加速，性能强劲</p></li>
+<li><p><strong>劣势</strong>：功耗和成本较高</p></li>
+</ul>
+</section>
+</section>
+<section id="imagination-powervr">
+<h3>Imagination PowerVR 系列<a class="headerlink" href="#imagination-powervr" title="Link to this heading"></a></h3>
+<section id="powervr-ge8300">
+<h4>PowerVR GE8300<a class="headerlink" href="#powervr-ge8300" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Rogue 架构</p></li>
+<li><p><strong>核心数</strong>：1 核心</p></li>
+<li><p><strong>性能</strong>：0.8 Gpix/s 填充率，30M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：0.2-0.4W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.0</p></li>
+<li><p><strong>应用场景</strong>：低端手机、智能家居显示</p></li>
+<li><p><strong>优势</strong>：超低功耗，基于瓦片渲染（TBDR）</p></li>
+<li><p><strong>劣势</strong>：性能较弱</p></li>
+</ul>
+</section>
+<section id="powervr-ge8320">
+<h4>PowerVR GE8320<a class="headerlink" href="#powervr-ge8320" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Rogue 架构</p></li>
+<li><p><strong>核心数</strong>：2 核心</p></li>
+<li><p><strong>性能</strong>：1.6 Gpix/s 填充率，60M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：0.5-1.0W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.0</p></li>
+<li><p><strong>应用场景</strong>：中端手机、车载仪表</p></li>
+<li><p><strong>优势</strong>：带宽效率高，功耗控制好</p></li>
+<li><p><strong>劣势</strong>：生态不如 Mali 完善</p></li>
+</ul>
+</section>
+<section id="powervr-gt7400">
+<h4>PowerVR GT7400<a class="headerlink" href="#powervr-gt7400" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Rogue 架构</p></li>
+<li><p><strong>核心数</strong>：4 核心</p></li>
+<li><p><strong>性能</strong>：3.2 Gpix/s 填充率，150M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：1.5-2.5W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1</p></li>
+<li><p><strong>应用场景</strong>：高端车载、专业显示设备</p></li>
+<li><p><strong>优势</strong>：光线追踪支持，画质优秀</p></li>
+<li><p><strong>劣势</strong>：驱动支持不如 ARM 广泛</p></li>
+</ul>
+</section>
+</section>
+<section id="vivante-gc">
+<h3>Vivante GC 系列<a class="headerlink" href="#vivante-gc" title="Link to this heading"></a></h3>
+<section id="gc7000l">
+<h4>GC7000L<a class="headerlink" href="#gc7000l" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Halti5 架构</p></li>
+<li><p><strong>核心数</strong>：1 核心</p></li>
+<li><p><strong>性能</strong>：2.0 Gpix/s 填充率，100M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：0.8-1.5W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1, OpenCL 1.2</p></li>
+<li><p><strong>应用场景</strong>：车载显示、工业控制、医疗设备</p></li>
+<li><p><strong>优势</strong>：多显示输出，2D 加速强</p></li>
+<li><p><strong>劣势</strong>：3D 性能一般</p></li>
+</ul>
+</section>
+<section id="gc7000ul">
+<h4>GC7000UL<a class="headerlink" href="#gc7000ul" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Halti5 架构</p></li>
+<li><p><strong>核心数</strong>：2 核心</p></li>
+<li><p><strong>性能</strong>：3.5 Gpix/s 填充率，180M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：1.2-2.0W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1, OpenCL 2.0</p></li>
+<li><p><strong>应用场景</strong>：高端车载、多屏显示</p></li>
+<li><p><strong>优势</strong>：支持 4K 输出，视频解码加速</p></li>
+<li><p><strong>劣势</strong>：市场占有率较低</p></li>
+</ul>
+</section>
+<section id="gc8000">
+<h4>GC8000<a class="headerlink" href="#gc8000" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>架构</strong>：Halti5 架构</p></li>
+<li><p><strong>核心数</strong>：4 核心</p></li>
+<li><p><strong>性能</strong>：5.0 Gpix/s 填充率，250M 三角形/秒</p></li>
+<li><p><strong>功耗</strong>：2.0-3.5W</p></li>
+<li><p><strong>API 支持</strong>：OpenGL ES 3.2, Vulkan 1.1, OpenCL 2.0</p></li>
+<li><p><strong>应用场景</strong>：高性能车载、专业图形工作站</p></li>
+<li><p><strong>优势</strong>：多核心扩展性好，企业级支持</p></li>
+<li><p><strong>劣势</strong>：功耗较高</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="id2">
+<h2>性能对比表<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>GPU 型号</p></th>
+<th class="head"><p>架构</p></th>
+<th class="head"><p>核心数</p></th>
+<th class="head"><p>填充率</p></th>
+<th class="head"><p>三角形/秒</p></th>
+<th class="head"><p>功耗</p></th>
+<th class="head"><p>API 支持</p></th>
+<th class="head"><p>适用场景</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Mali-G31</p></td>
+<td><p>Bifrost</p></td>
+<td><p>1-2</p></td>
+<td><p>1.2 Gpix/s</p></td>
+<td><p>50M</p></td>
+<td><p>0.3-0.6W</p></td>
+<td><p>ES3.2/VK1.0</p></td>
+<td><p>智能手表、IoT</p></td>
+</tr>
+<tr class="row-odd"><td><p>Mali-G52</p></td>
+<td><p>Bifrost</p></td>
+<td><p>2-4</p></td>
+<td><p>2.8 Gpix/s</p></td>
+<td><p>120M</p></td>
+<td><p>1.0-2.0W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>中端手机、车载</p></td>
+</tr>
+<tr class="row-even"><td><p>Mali-G57</p></td>
+<td><p>Valhall</p></td>
+<td><p>1-6</p></td>
+<td><p>4.5 Gpix/s</p></td>
+<td><p>200M</p></td>
+<td><p>1.5-3.0W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>高端车载、AR/VR</p></td>
+</tr>
+<tr class="row-odd"><td><p>PowerVR GE8300</p></td>
+<td><p>Rogue</p></td>
+<td><p>1</p></td>
+<td><p>0.8 Gpix/s</p></td>
+<td><p>30M</p></td>
+<td><p>0.2-0.4W</p></td>
+<td><p>ES3.2/VK1.0</p></td>
+<td><p>低端手机、智能家居</p></td>
+</tr>
+<tr class="row-even"><td><p>PowerVR GE8320</p></td>
+<td><p>Rogue</p></td>
+<td><p>2</p></td>
+<td><p>1.6 Gpix/s</p></td>
+<td><p>60M</p></td>
+<td><p>0.5-1.0W</p></td>
+<td><p>ES3.2/VK1.0</p></td>
+<td><p>中端手机、仪表</p></td>
+</tr>
+<tr class="row-odd"><td><p>PowerVR GT7400</p></td>
+<td><p>Rogue</p></td>
+<td><p>4</p></td>
+<td><p>3.2 Gpix/s</p></td>
+<td><p>150M</p></td>
+<td><p>1.5-2.5W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>高端车载</p></td>
+</tr>
+<tr class="row-even"><td><p>GC7000L</p></td>
+<td><p>Halti5</p></td>
+<td><p>1</p></td>
+<td><p>2.0 Gpix/s</p></td>
+<td><p>100M</p></td>
+<td><p>0.8-1.5W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>车载、工控</p></td>
+</tr>
+<tr class="row-odd"><td><p>GC7000UL</p></td>
+<td><p>Halti5</p></td>
+<td><p>2</p></td>
+<td><p>3.5 Gpix/s</p></td>
+<td><p>180M</p></td>
+<td><p>1.2-2.0W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>高端车载</p></td>
+</tr>
+<tr class="row-even"><td><p>GC8000</p></td>
+<td><p>Halti5</p></td>
+<td><p>4</p></td>
+<td><p>5.0 Gpix/s</p></td>
+<td><p>250M</p></td>
+<td><p>2.0-3.5W</p></td>
+<td><p>ES3.2/VK1.1</p></td>
+<td><p>专业图形</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id3">
+<h2>技术特性对比<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="id4">
+<h3>渲染架构<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>ARM Mali</strong>：立即模式渲染（IMR），适合通用场景</p></li>
+<li><p><strong>PowerVR</strong>：基于瓦片的延迟渲染（TBDR），带宽效率高</p></li>
+<li><p><strong>Vivante</strong>：混合架构，2D/3D 均衡</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>功耗效率<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>最佳</strong>：PowerVR GE 系列（TBDR 架构优势）</p></li>
+<li><p><strong>优秀</strong>：Mali-G31（专为低功耗优化）</p></li>
+<li><p><strong>良好</strong>：Vivante GC7000L、Mali-G52</p></li>
+<li><p><strong>一般</strong>：Mali-G57、GC8000（高性能代价）</p></li>
+</ol>
+</section>
+<section id="id6">
+<h3>驱动支持<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>最佳</strong>：ARM Mali（Linux 主线内核支持，社区活跃）</p></li>
+<li><p><strong>良好</strong>：PowerVR（官方驱动稳定）</p></li>
+<li><p><strong>一般</strong>：Vivante（依赖厂商支持）</p></li>
+</ol>
+</section>
+<section id="id7">
+<h3>生态系统<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>ARM Mali</strong>：最广泛，工具链完善（Mali Offline Compiler, Streamline）</p></li>
+<li><p><strong>PowerVR</strong>：中等，有 PVRTune 等专业工具</p></li>
+<li><p><strong>Vivante</strong>：较小，主要依赖 NXP 等合作伙伴</p></li>
+</ul>
+</section>
+</section>
+<section id="id8">
+<h2>应用场景推荐<a class="headerlink" href="#id8" title="Link to this heading"></a></h2>
+<section id="iot">
+<h3>智能手表 / IoT 设备<a class="headerlink" href="#iot" title="Link to this heading"></a></h3>
+<p><strong>推荐</strong>：Mali-G31 或 PowerVR GE8300</p>
+<ul class="simple">
+<li><p>功耗 &lt; 0.5W</p></li>
+<li><p>支持基础 UI 动画</p></li>
+<li><p>成本敏感</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>车载仪表盘<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<p><strong>推荐</strong>：Mali-G52 或 PowerVR GE8320</p>
+<ul class="simple">
+<li><p>分辨率 800x480 - 1280x720</p></li>
+<li><p>支持多层合成</p></li>
+<li><p>温度范围 -40°C ~ 85°C</p></li>
+</ul>
+</section>
+<section id="id10">
+<h3>车载中控屏<a class="headerlink" href="#id10" title="Link to this heading"></a></h3>
+<p><strong>推荐</strong>：Mali-G57 或 GC7000UL</p>
+<ul class="simple">
+<li><p>分辨率 1920x1080 或更高</p></li>
+<li><p>支持 3D 导航</p></li>
+<li><p>视频解码加速</p></li>
+</ul>
+</section>
+<section id="hmi">
+<h3>工业 HMI<a class="headerlink" href="#hmi" title="Link to this heading"></a></h3>
+<p><strong>推荐</strong>：GC7000L 或 Mali-G52</p>
+<ul class="simple">
+<li><p>多显示输出</p></li>
+<li><p>长期供货保证</p></li>
+<li><p>稳定性优先</p></li>
+</ul>
+</section>
+<section id="ar-vr">
+<h3>AR/VR 设备<a class="headerlink" href="#ar-vr" title="Link to this heading"></a></h3>
+<p><strong>推荐</strong>：Mali-G57 或 PowerVR GT7400</p>
+<ul class="simple">
+<li><p>高刷新率（90Hz+）</p></li>
+<li><p>低延迟渲染</p></li>
+<li><p>机器学习加速</p></li>
+</ul>
+</section>
+</section>
+<section id="id11">
+<h2>软件渲染方案<a class="headerlink" href="#id11" title="Link to this heading"></a></h2>
+<p>当无 GPU 或 GPU 性能不足时，可采用软件渲染：</p>
+<section id="id12">
+<h3>方案选择<a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>LittlevGL (LVGL)</strong>：轻量级 GUI，CPU 渲染</p></li>
+<li><p><strong>Cairo</strong>：2D 矢量图形库</p></li>
+<li><p><strong>Skia</strong>：Google 的 2D 图形引擎</p></li>
+<li><p><strong>TinyGL</strong>：精简版 OpenGL 软件实现</p></li>
+</ol>
+</section>
+<section id="id13">
+<h3>优化策略<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>使用 NEON/SIMD 指令加速</p></li>
+<li><p>减少重绘区域（脏矩形）</p></li>
+<li><p>降低色深（RGB565 代替 RGB888）</p></li>
+<li><p>使用 DMA2D 硬件加速（如 STM32）</p></li>
+<li><p>预渲染静态内容</p></li>
+</ul>
+</section>
+<section id="id14">
+<h3>性能参考<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>LVGL + NEON</strong>：480x320&#64;30fps（Cortex-A7 &#64; 1GHz）</p></li>
+<li><p><strong>Cairo</strong>：800x480&#64;15fps（Cortex-A53 &#64; 1.5GHz）</p></li>
+<li><p><strong>Skia</strong>：1280x720&#64;10fps（Cortex-A53 &#64; 1.5GHz）</p></li>
+</ul>
+</section>
+</section>
+<section id="id15">
+<h2>选型建议<a class="headerlink" href="#id15" title="Link to this heading"></a></h2>
+<section id="id16">
+<h3>按功耗选择<a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>&lt; 0.5W</strong>：Mali-G31, PowerVR GE8300</p></li>
+<li><p><strong>0.5-1.5W</strong>：Mali-G52, PowerVR GE8320, GC7000L</p></li>
+<li><p><strong>1.5-3W</strong>：Mali-G57, PowerVR GT7400, GC7000UL</p></li>
+</ul>
+</section>
+<section id="id17">
+<h3>按性能选择<a class="headerlink" href="#id17" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>入门级</strong>（&lt; 1 Gpix/s）：Mali-G31, PowerVR GE8300</p></li>
+<li><p><strong>中端</strong>（1-3 Gpix/s）：Mali-G52, PowerVR GE8320, GC7000L</p></li>
+<li><p><strong>高端</strong>（&gt; 3 Gpix/s）：Mali-G57, PowerVR GT7400, GC8000</p></li>
+</ul>
+</section>
+<section id="id18">
+<h3>按生态选择<a class="headerlink" href="#id18" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>开源优先</strong>：ARM Mali（主线内核支持）</p></li>
+<li><p><strong>商业支持</strong>：PowerVR（官方技术支持）</p></li>
+<li><p><strong>NXP 平台</strong>：Vivante GC（<a class="reference external" href="http://i.MX">i.MX</a> 系列集成）</p></li>
+</ul>
+</section>
+</section>
+<section id="id19">
+<h2>参考资源<a class="headerlink" href="#id19" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://developer.arm.com/ip-products/graphics-and-multimedia/mali-gpus">ARM Mali GPU 官方文档</a></p></li>
+<li><p><a class="reference external" href="https://www.imaginationtech.com/products/gpu/">Imagination PowerVR 技术白皮书</a></p></li>
+<li><p><a class="reference external" href="https://github.com/etnaviv/etna_viv">Vivante GPU 驱动开源项目</a></p></li>
+<li><p><a class="reference external" href="https://www.phoronix.com/">Phoronix GPU 性能测试</a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="页脚">
+        <a href="interface.html" class="btn btn-neutral float-left" title="接口说明" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> 上一页</a>
+        <a href="2d-vs-3d-gpu.html" class="btn btn-neutral float-right" title="2.5D GPU 与 3D GPU 对比分析" accesskey="n" rel="next">下一页 <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

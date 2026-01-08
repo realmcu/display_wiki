@@ -1,0 +1,9 @@
+GPU or hardware acceleration for graphics operations (bitblit, alpha blending, polygon support, 
+3x3 Matrix rotation, including perspective support), clipping, OpenVG, 24-bit resolution 480x600 at 60fps
+Support the following Source formats: Index1, Index2, Index4, Index8, A4, A8, L8, A1R5G5B5, A2R2G2B2, A4R4G4B4, RGB565
+Support the following Destination formats: A1R5G5B5, A2R2G2B2, A8R8G8B8, L8, R5G6B5
+Path fill and stroke with anti-aliasing:  Lines, Bezier curves, arcs. Color and texture fill
+Gaussian Blur
+Surface to surface color multiply (texture application)
+Accurate (off surface) large coordinate rendering space for vectors and textures. (4k+)
+linear, radial, Conic Gradient support
