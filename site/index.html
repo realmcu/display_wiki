@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Display Wiki 站点</title>
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Display Wiki</h1>
+      <p>本地/WSL 文档站点（静态版）</p>
+    </header>
+    <main>
+      <section>
+        <h2>目录</h2>
+        <ul>
+          <li><a href="docs/welcome.html">示例文档：欢迎页</a></li>
+        </ul>
+      </section>
+      <section>
+        <h2>使用说明</h2>
+        <ol>
+          <li>将你的页面放到 <code>site/docs/</code> 目录（HTML 文件）。</li>
+          <li>图片与附件放到 <code>site/assets/</code> 并用相对路径引用。</li>
+          <li>运行 <code>./serve.sh</code> 或 <code>bash serve.sh</code> 后在浏览器访问。</li>
+        </ol>
+        <p>如需 Markdown 与搜索等功能，后续可升级为 MkDocs。</p>
+      </section>
+    </main>
+    <footer>
+      <small>WSL 本机可通过 <code>http://localhost:PORT</code> 访问。</small>
+    </footer>
+  </body>
+</html>
+

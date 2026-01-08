@@ -1,0 +1,9 @@
+myst-parser
+linkify-it-py
+sphinx
+sphinx-rtd-theme
+sphinx-copybutton
+sphinxcontrib-mermaid
+Jinja2
+docutils
+Pygments
