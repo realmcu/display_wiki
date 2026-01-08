@@ -1,4 +1,4 @@
-欢迎来到 Display Wiki 中文文档
+欢迎来到 Display Wiki
 =============================
 
 .. toctree::

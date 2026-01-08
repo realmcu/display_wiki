@@ -40,7 +40,7 @@ netsh advfirewall firewall add rule name="WSL Docs 8000" dir=in action=allow pro
 - 统一 UTF-8 编码，文件名使用英文与短横线。
 
 ## 编译 Sphinx 文档
-本仓库已预置了 Sphinx 双语结构。
+本仓库已预置了 Sphinx 文档结构。
 
 ### 环境准备
 ```bash
@@ -54,16 +54,14 @@ pip install -r doc/requirements.txt
 
 ### 构建文档
 ```bash
-# 构建中英文文档到 site/cn 和 site/en
+# 构建文档到 site/
 scripts/build_docs.sh
 
 # 启动服务预览
 ./serve.sh -p 8080
 ```
 
-访问：
-- 中文文档：http://localhost:8080/cn
-- 英文文档：http://localhost:8080/en
+访问：http://localhost:8080
 
 ### Read the Docs 托管
 配置见 `.readthedocs.yaml`。在 RTD 绑定仓库即可自动构建。
