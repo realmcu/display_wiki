@@ -44,8 +44,10 @@ html_css_files = [
 html_theme_options = {
     'collapse_navigation': False,
     'logo_only': True,
-    'display_version': True,
     'navigation_depth': 10,
+    'sticky_navigation': True,
+    'includehidden': True,
+    'titles_only': False,
 }
 
 language = 'zh_CN'
