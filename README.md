@@ -39,13 +39,31 @@ netsh advfirewall firewall add rule name="WSL Docs 8000" dir=in action=allow pro
 - 资源走相对路径（例如 `assets/style.css`、`assets/img.png`）。
 - 统一 UTF-8 编码，文件名使用英文与短横线。
 
-## 可选升级（Sphinx + Read the Docs）
-本仓库已预置了 Sphinx 双语结构（不含 Doxygen）。当网络允许时：
+## 编译 Sphinx 文档
+本仓库已预置了 Sphinx 双语结构。
 
+### 环境准备
 ```bash
+# 创建虚拟环境
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# 安装依赖
 pip install -r doc/requirements.txt
-scripts/build_docs.sh       # 生成到 site/cn 与 site/en
-./serve.sh -d site -p 8000  # 通过浏览器访问
 ```
 
-Read the Docs 配置见 `.readthedocs.yaml`。如需托管构建，可在 RTD 绑定仓库。
+### 构建文档
+```bash
+# 构建中英文文档到 site/cn 和 site/en
+scripts/build_docs.sh
+
+# 启动服务预览
+./serve.sh -p 8080
+```
+
+访问：
+- 中文文档：http://localhost:8080/cn
+- 英文文档：http://localhost:8080/en
+
+### Read the Docs 托管
+配置见 `.readthedocs.yaml`。在 RTD 绑定仓库即可自动构建。
