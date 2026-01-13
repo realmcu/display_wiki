@@ -162,15 +162,56 @@ http://<Windows主机IP>:8080
 
 详见 `AGENTS.md` 文档规范。
 
-## 部署与自启（简述）
+## 配置 systemd 服务
 
-本仓库不再提供 systemd 或 Windows 批处理的服务文件示例（原 `display-wiki.service`、`start-display-wiki.bat` 已移除）。
+### 用户级服务（手动创建示例）
 
-如需在本机长期运行或开机自启，可按以下思路自定义：
-- Linux：使用 `systemd --user` 自行编写服务单元，或通过 `crontab @reboot`、`pm2` 等工具管理；服务进程可执行 `python3 -m http.server --directory site <port>`。
-- Windows：使用任务计划程序（Task Scheduler）或 `nssm` 等工具注册常驻进程；同样可指向 `site/` 目录提供静态文件。
+以下示例演示如何在 Linux 上使用 `systemd --user` 手动创建并管理一个服务，以在后台长期托管本仓库构建后的静态站点。示例不依赖仓库内自带服务文件，需自行填写实际路径。
 
-对于临时预览或开发，请优先使用 `./serve.sh -p 8000 -d site` 或 `python -m http.server` 即可。
+- 预构建站点：
+  - `scripts/build_docs.sh`，或 `sphinx-build -b html doc site`
+- 创建用户级服务文件：
+  - `mkdir -p ~/.config/systemd/user`
+  - 编辑 `~/.config/systemd/user/display-wiki.service`（文件名可自定义）：
+
+```ini
+[Unit]
+Description=Display Wiki static site (user service)
+After=network.target
+
+[Service]
+Type=simple
+# 将此路径改为你的仓库目录
+WorkingDirectory=/path/to/display_wiki
+# 如使用虚拟环境，可改为 /path/to/display_wiki/.venv/bin/python
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /path/to/display_wiki/site
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+- 启用与管理：
+  - `systemctl --user daemon-reload`
+  - `systemctl --user enable display-wiki`
+  - `systemctl --user start display-wiki`
+  - `systemctl --user status display-wiki`
+
+- 常用命令：
+  - 停止：`systemctl --user stop display-wiki`
+  - 重启：`systemctl --user restart display-wiki`
+  - 查看日志：`journalctl --user -u display-wiki -f`
+  - 取消开机自启：`systemctl --user disable display-wiki`
+
+- 可选：启用持久化运行（未登录也运行）
+  - `loginctl enable-linger $USER`
+
+> 提示：如需更换端口或目录，修改 `ExecStart` 中的端口和 `/path/to/display_wiki/site`。确保 `site/` 已构建且包含静态文件。
+
+### 系统级服务（可选，需要 root 权限）
+
+若希望系统层面托管，可在 `/etc/systemd/system/` 下创建类似的服务文件，并使用 `sudo systemctl` 管理。但对于个人开发与预览，建议优先使用用户级服务或直接运行 `./serve.sh -p 8000 -d site`。
 
 ## 许可证
 
