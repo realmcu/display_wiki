@@ -631,12 +631,17 @@ window.addEventListener("load", load);
 <td><p>移动/嵌入式 3D 渲染（可编程着色器）</p></td>
 <td><p>3D GPU</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>OpenCV</strong></p></td>
+<tr class="row-odd"><td><p><strong>Vulkan</strong></p></td>
+<td><p>3D 图形（现代）</p></td>
+<td><p>低开销、显式控制、多线程 3D API</p></td>
+<td><p>3D GPU（现代）</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>OpenCV</strong></p></td>
 <td><p>计算机视觉</p></td>
 <td><p>图像处理、特征检测、机器视觉</p></td>
 <td><p>通用计算</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>OpenCL</strong></p></td>
+<tr class="row-odd"><td><p><strong>OpenCL</strong></p></td>
 <td><p>并行计算</p></td>
 <td><p>GPU 通用计算、数据并行处理</p></td>
 <td><p>3D GPU（计算核心）</p></td>
@@ -658,6 +663,20 @@ window.addEventListener("load", load);
 <li><p>OpenGL ES 2.0：嵌入式精简版，保留可编程着色器（顶点/片段着色器）</p></li>
 <li><p>典型应用：3D 游戏、导航、AR/VR</p></li>
 <li><p>硬件需求：3D GPU（Mali、PowerVR、Vivante GC7000）</p></li>
+</ul>
+<p><strong>Vulkan</strong>：</p>
+<ul class="simple">
+<li><p>新一代低开销 3D 图形和计算 API（OpenGL 继任者，2016 年发布）</p></li>
+<li><p>核心特点：显式控制、原生多线程、预编译着色器（SPIR-V）、最小驱动开销</p></li>
+<li><p>与 OpenGL 对比：</p>
+<ul>
+<li><p><strong>控制粒度</strong>：Vulkan 需手动管理内存/同步/命令缓冲（代码量大但性能高）</p></li>
+<li><p><strong>多线程</strong>：Vulkan 天生支持多线程提交，OpenGL 支持有限</p></li>
+<li><p><strong>学习曲线</strong>：Vulkan 陡峭（手动挡赛车），OpenGL 平缓（自动挡汽车）</p></li>
+</ul>
+</li>
+<li><p>适用场景：追求极致性能的游戏引擎、专业应用、高端嵌入式设备</p></li>
+<li><p>硬件需求：现代 3D GPU（Mali-G 系列、PowerVR Series 9+）</p></li>
 </ul>
 <p><strong>OpenCV</strong>：</p>
 <ul class="simple">
@@ -806,7 +825,133 @@ window.addEventListener("load", load);
 </section>
 <section id="s">
 <h3>2.2 客户 S 需求<a class="headerlink" href="#s" title="Link to this heading"></a></h3>
-<p>（待补充客户 S 需求内容）</p>
+<p>客户 S 仅提出支持 3D 渲染需求，未明确详细规格。以下为典型嵌入式 3D GPU 基本规格参考：</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>分类</p></th>
+<th class="head"><p>项目/能力</p></th>
+<th class="head"><p>规格/支持</p></th>
+<th class="head"><p>说明/备注</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>显示与性能</p></td>
+<td><p>分辨率</p></td>
+<td><p>480×600 ~ 1280×720</p></td>
+<td><p>常见嵌入式显示分辨率</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>刷新率</p></td>
+<td><p>30 ~ 60 fps</p></td>
+<td><p>根据场景复杂度调整</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>色深</p></td>
+<td><p>16-bit (RGB565) / 32-bit (ARGB8888)</p></td>
+<td><p>帧缓冲格式</p></td>
+</tr>
+<tr class="row-odd"><td><p>3D 渲染管线</p></td>
+<td><p>顶点着色器</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>可编程顶点处理</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>片段着色器</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>可编程像素着色</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>深度测试</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>Z-Buffer，16/24-bit 深度</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>模板测试</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>8-bit 模板缓冲</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>三角形渲染</p></td>
+<td><p>30M ~ 100M tri/s</p></td>
+<td><p>典型性能范围</p></td>
+</tr>
+<tr class="row-even"><td><p>图形 API</p></td>
+<td><p>OpenGL ES</p></td>
+<td><p>2.0 / 3.0</p></td>
+<td><p>嵌入式标准 3D API</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>Vulkan</p></td>
+<td><p>可选</p></td>
+<td><p>低开销现代 API</p></td>
+</tr>
+<tr class="row-even"><td><p>纹理支持</p></td>
+<td><p>纹理格式</p></td>
+<td><p>RGB565、RGBA8888、压缩纹理（ETC2/ASTC）</p></td>
+<td><p>常用纹理格式</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>纹理过滤</p></td>
+<td><p>双线性/三线性过滤、Mipmap</p></td>
+<td><p>纹理采样质量</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>最大纹理尺寸</p></td>
+<td><p>2048×2048 ~ 4096×4096</p></td>
+<td><p>取决于 GPU 规格</p></td>
+</tr>
+<tr class="row-odd"><td><p>光照与材质</p></td>
+<td><p>光照计算</p></td>
+<td><p>着色器实现</p></td>
+<td><p>Per-vertex / Per-pixel lighting</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>多光源</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>通过着色器编程</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>材质属性</p></td>
+<td><p>漫反射、镜面反射、法线贴图</p></td>
+<td><p>标准 PBR 材质</p></td>
+</tr>
+<tr class="row-even"><td><p>混合与特效</p></td>
+<td><p>Alpha 混合</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>透明物体渲染</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>多重采样抗锯齿（MSAA）</p></td>
+<td><p>2x / 4x</p></td>
+<td><p>边缘平滑</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>帧缓冲对象（FBO）</p></td>
+<td><p>✅ 支持</p></td>
+<td><p>离屏渲染、后处理</p></td>
+</tr>
+<tr class="row-odd"><td><p>内存与带宽</p></td>
+<td><p>顶点缓冲</p></td>
+<td><p>512KB ~ 2MB</p></td>
+<td><p>VBO 缓存</p></td>
+</tr>
+<tr class="row-even"><td><p></p></td>
+<td><p>纹理缓存</p></td>
+<td><p>4MB ~ 16MB</p></td>
+<td><p>纹理数据缓存</p></td>
+</tr>
+<tr class="row-odd"><td><p></p></td>
+<td><p>内存带宽需求</p></td>
+<td><p>300 ~ 1000 MB/s</p></td>
+<td><p>取决于分辨率与帧率</p></td>
+</tr>
+<tr class="row-even"><td><p>功耗</p></td>
+<td><p>典型功耗</p></td>
+<td><p>300mW ~ 1W</p></td>
+<td><p>中低端嵌入式 3D GPU</p></td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
 <hr class="docutils" />
