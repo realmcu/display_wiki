@@ -8,8 +8,6 @@
 display-specs
 driver-chips
 interface
-gpu-analysis
 2d-vs-3d-gpu
-gpu-requirements
 camera-analysis
 ```

@@ -31,11 +31,96 @@
  **2.5D GPU**：路径/图元+矩阵变换与涂装，呈“伪 3D”，不含深度/光照
  **3D GPU**：可编程管线（着色器）含深度/光照/材质，渲染真实三维
 
+
+### 1.4 相关软件 API 概念
+
+| API | 类型 | 用途 | 对应 GPU |
+|-----|------|------|---------|
+| **OpenVG** | 2D 矢量图形 | 矢量路径渲染、抗锯齿、渐变填充 | 2.5D GPU |
+| **OpenGL** | 3D 图形 | 桌面级 3D 渲染（完整特性） | 3D GPU |
+| **OpenGL ES 2.0** | 3D 图形（嵌入式） | 移动/嵌入式 3D 渲染（可编程着色器） | 3D GPU |
+| **OpenCV** | 计算机视觉 | 图像处理、特征检测、机器视觉 | 通用计算 |
+| **OpenCL** | 并行计算 | GPU 通用计算、数据并行处理 | 3D GPU（计算核心） |
+
+#### API 详细说明
+
+**OpenVG 1.1**：
+- 专为 2D 矢量图形设计的硬件加速 API
+- 支持路径填充/描边、贝塞尔曲线、渐变、图像滤镜
+- 典型应用：车载仪表、UI 动画、SVG 渲染
+- 硬件需求：2.5D GPU（如 Vivante GC320、GCNanoUltraV）
+
+**OpenGL / OpenGL ES 2.0**：
+- OpenGL：桌面完整版，支持几何着色器、曲面细分等高级特性
+- OpenGL ES 2.0：嵌入式精简版，保留可编程着色器（顶点/片段着色器）
+- 典型应用：3D 游戏、导航、AR/VR
+- 硬件需求：3D GPU（Mali、PowerVR、Vivante GC7000）
+
+**OpenCV**：
+- 计算机视觉库，非图形渲染 API
+- 功能：图像滤波、边缘检测、目标识别、相机标定
+- 可利用 GPU 加速（通过 OpenCL 或 CUDA）
+- 典型应用：ADAS、人脸识别、工业检测
+
+**OpenCL**：
+- 异构并行计算框架，将 GPU 作为通用计算设备
+- 支持数据并行、任务并行、向量运算
+- 典型应用：图像处理、机器学习推理、科学计算
+- 硬件需求：支持计算的 3D GPU（Mali 支持 OpenCL 2.0）
+
+#### API 与 GPU 类型对应关系
+
+```
+2D GPU (DMA2D, PXP)
+  └─ 无标准 API，直接寄存器操作或厂商 HAL
+
+2.5D GPU (GC320, GCNanoUltraV)
+  ├─ OpenVG 1.1 (矢量图形)
+  └─ 私有 2D API (BitBlt, Alpha 混合)
+
+3D GPU (Mali, PowerVR, GC7000)
+  ├─ OpenGL ES 2.0/3.x (3D 渲染)
+  ├─ Vulkan (低开销 3D API)
+  └─ OpenCL 1.2/2.0 (通用计算)
+```
 ---
 
-## 2. 工作原理对比（芯片设计视角）
+## 2. 客户需求
 
-### 2.1 2D GPU 工作流程
+### 2.1 客户 G 需求
+
+| 分类 | 项目/能力 | 规格/支持 | 说明/备注 |
+|---|---|---|---|
+| 显示与性能 | 分辨率与色深 | 480×600，24-bit | 显示输出目标配置 |
+|  | 刷新率 | 60 fps | 稳定帧率目标 |
+| 核心硬件加速与基本图像操作 | 位块传输（BitBLT） | ✅ 支持 | 源/目标表面区域拷贝与传输 |
+|  | Alpha 混合（Alpha Blending） | ✅ 支持 | 透明度合成（可预乘/非预乘） |
+|  | 多边形支持（填充/描边） | ✅ 支持 | 基本多边形图元 |
+|  | 裁剪（Clipping） | ✅ 支持 | 矩形/区域裁剪 |
+|  | OpenVG | ✅ 支持 | 建议明确版本（如 1.1） |
+| 几何变换与坐标空间 | 3×3 矩阵变换 | ✅ 支持 | 平移、旋转、缩放、剪切 |
+|  | 透视（投影）支持 | ✅ 支持 | 2D projective transform（同质坐标） |
+|  | 大坐标渲染空间 | ✅ 支持 | 精确 off-surface 渲染（4k+） |
+| 路径与填充/描边（抗锯齿） | 路径图元 | 线段、贝塞尔曲线、圆弧 | 以路径方式定义与绘制 |
+|  | 抗锯齿（AA）填充与描边 | ✅ 支持 | 子像素级平滑 |
+|  | 填充类型 | 颜色填充、纹理填充 | Color 和 Texture Fill |
+| 渐变与图像特效 | 渐变类型 | 线性、径向、圆锥（Conic） | 多种渐变着色 |
+|  | 高斯模糊（Gaussian Blur） | ✅ 支持 | 可配置半径 |
+|  | 表面颜色相乘（Multiply） | ✅ 支持 | Surface-to-surface（纹理应用等） |
+| 像素格式支持 | 源格式（Source） | Index1、Index2、Index4、Index8、A4、A8、L8、A1R5G5B5、A2R2G2B2、A4R4G4B4、RGB565 | 作为输入纹理/源表面 |
+|  | 目标格式（Destination） | A1R5G5B5、A2R2G2B2、A8R8G8B8、L8、R5G6B5 | 作为渲染目标/帧缓冲 |
+|  | 格式备注 | ✅ | R5G6B5 与 RGB565 等价表述 |
+
+
+### 2.2 客户 S 需求
+
+（待补充客户 S 需求内容）
+
+---
+
+## 3. 工作原理对比（芯片设计视角）
+
+### 3.1 2D GPU 工作流程
 
 ```{mermaid}
 flowchart LR
@@ -65,7 +150,7 @@ flowchart LR
 - 数据流：线性读写
 - 无需复杂调度
 
-### 2.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
+### 3.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
 
 ```{mermaid}
 flowchart LR
@@ -83,6 +168,36 @@ flowchart LR
   TEX[纹理缓存] --> PAINT
   BLEND --> FB[帧缓冲]
 ```
+
+```{mermaid}
+flowchart TD
+    %% Google Style Colors
+    classDef blue fill:#E8F0FE,stroke:#4285F4,stroke-width:2px,color:#000;
+    classDef green fill:#E6F4EA,stroke:#34A853,stroke-width:2px,color:#000;
+    classDef red fill:#FCE8E6,stroke:#EA4335,stroke-width:2px,color:#000;
+
+    subgraph GPU_Pipeline ["GPU 硬件流水线"]
+        direction TB
+        
+        Input[("顶点数据 (Vertices)\n3个点定义一个三角形")]:::blue
+        
+        Step1["1. 顶点处理 (Vertex Processing)\n矩阵变换"]:::green
+        note1["计算旋转、缩放、透视\n将3D空间坐标转为2D屏幕坐标"]:::green
+        
+        Step2["2. 光栅化 (Rasterization)\n核心步骤"]:::red
+        note2["找出三角形覆盖了哪些像素\n(将三角形打碎成像素)"]:::red
+        
+        Step3["3. 像素着色 (Pixel Shading)\n填色"]:::blue
+        note3["计算每个像素的颜色\n(贴纹理、算光照)"]:::blue
+        
+    end
+
+    Input --> Step1
+    Step1 --> Step2
+    Step2 --> Step3
+    Step3 --> Output[("屏幕显示的图像")]
+```
+
 
 **工作方式**：
 1. CPU 提交命令到命令队列（Command Buffer）
@@ -104,7 +219,7 @@ flowchart LR
 - VeriSilicon Nano 2.5D/3D GPU Introduction Q2 2025: `_static/refs/(Realtek) VeriSilicon Nano 2.5D_3D GPU Introduction - Q2 2025 V1.0 2.pdf`
 - GCNanoUltraV Features/Integration/Registers: `_static/refs/Vivante.GCNanoUltraV.V20x.Hardware.Features-v0.89-D-20230224.pdf`, `_static/refs/Vivante.GCNanoUltraV.Series.V20x.Hardware.Integration-v0.88-D-20230223.pdf`, `_static/refs/Vivante.GCNanoUltraV.V2.0.0.Accessible.Registers-0x00000435-v0.80_rc3z-B-20240513.pdf`
 
-### 2.3 3D GPU 工作流程
+### 3.3 3D GPU 工作流程
 
 ```{mermaid}
 flowchart LR
@@ -149,9 +264,9 @@ flowchart LR
 
 ---
 
-## 3. 内存架构对比（关键设计要素）
+## 4. 内存架构对比（关键设计要素）
 
-### 3.1 内存带宽需求
+### 4.1 内存带宽需求
 
 以 **480×480 @ 60fps** 为例：
 
@@ -165,7 +280,7 @@ flowchart LR
 | **总带宽需求** | **~60 MB/s** | **~150 MB/s** | **~300 MB/s** |
 | **建议带宽余量** | 100 MB/s | 300 MB/s | 600 MB/s |
 
-### 3.2 内存容量需求
+### 4.2 内存容量需求
 
 | 缓冲区 | 2D GPU | 2.5D GPU | 3D GPU |
 |-------|--------|----------|--------|
@@ -177,7 +292,7 @@ flowchart LR
 | **着色器指令** | - | - | 64 KB |
 | **总内存需求** | **~1 MB** | **~3-6 MB** | **~8-20 MB** |
 
-### 3.3 内存访问模式
+### 4.3 内存访问模式
 
 | 特性 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -188,9 +303,9 @@ flowchart LR
 
 ---
 
-## 4. 总线架构需求
+## 5. 总线架构需求
 
-### 4.1 总线接口对比
+### 5.1 总线接口对比
 
 | 特性 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -200,7 +315,7 @@ flowchart LR
 | **QoS 支持** | 可选 | 建议 | 必需 |
 | **MMU 支持** | 可选 | 建议 | 必需 |
 
-### 4.2 典型总线配置
+### 5.2 典型总线配置
 
 **2D GPU（低成本方案）**：
 ```{mermaid}
@@ -235,7 +350,7 @@ flowchart LR
 ```
 备注：内存控制器 DDR3 1600
 
-### 4.3 总线带宽分配建议
+### 5.3 总线带宽分配建议
 
 | 主设备 | 2D GPU 系统 | 2.5D GPU 系统 | 3D GPU 系统 |
 |-------|-------------|---------------|-------------|
@@ -246,9 +361,9 @@ flowchart LR
 
 ---
 
-## 5. 硬件资源对比
+## 6. 硬件资源对比
 
-### 5.1 芯片面积（28nm 工艺估算）
+### 6.1 芯片面积（28nm 工艺估算）
 
 | 模块 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -257,7 +372,7 @@ flowchart LR
 | **寄存器文件** | 1 KB | 4 KB | 16-64 KB |
 | **总面积** | **0.2-0.5 mm²** | **0.8-1.5 mm²** | **2.0-5.0 mm²** |
 
-### 5.2 功耗估算（典型工作负载）
+### 6.2 功耗估算（典型工作负载）
 
 | 指标 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -266,7 +381,7 @@ flowchart LR
 | **峰值功耗** | 80 mW | 500 mW | 2000 mW |
 | **能效比** | 20 Mpix/mW | 5 Mpix/mW | 2 Mpix/mW |
 
-### 5.3 时钟域
+### 6.3 时钟域
 
 | 时钟 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -277,9 +392,9 @@ flowchart LR
 
 ---
 
-## 6. 系统集成考量
+## 7. 系统集成考量
 
-### 6.1 IP 集成复杂度
+### 7.1 IP 集成复杂度
 
 | 集成项 | 2D GPU | 2.5D GPU | 3D GPU |
 |-------|--------|----------|--------|
@@ -288,7 +403,7 @@ flowchart LR
 | **驱动开发** | 1-2 人月 | 2-4 人月 | 6-12 人月 |
 | **功耗优化** | 简单 | 中等 | 复杂 |
 
-### 6.2 软件栈对比
+### 7.2 软件栈对比
 
 **2D GPU**：
 ```
@@ -325,7 +440,7 @@ OpenGL ES / Vulkan
 硬件
 ```
 
-### 6.3 中断和同步
+### 7.3 中断和同步
 
 | 特性 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -335,9 +450,9 @@ OpenGL ES / Vulkan
 
 ---
 
-## 7. 设计决策指南
+## 8. 设计决策指南
 
-### 7.1 选型决策树
+### 8.1 选型决策树
 
 ```
 开始
@@ -358,7 +473,7 @@ OpenGL ES / Vulkan
 选择 2D GPU
 ```
 
-### 7.2 系统配置建议
+### 8.2 系统配置建议
 
 | 应用场景 | GPU 类型 | 内存配置 | 总线配置 | 功耗预算 |
 |---------|---------|---------|---------|---------|
@@ -368,7 +483,7 @@ OpenGL ES / Vulkan
 | **车载中控** | 3D GPU | 256MB DDR3 | AXI-128 | < 2W |
 | **游戏设备** | 3D GPU | 512MB DDR4 | AXI-256 | < 5W |
 
-### 7.3 风险评估
+### 8.3 风险评估
 
 | 风险项 | 2D GPU | 2.5D GPU | 3D GPU |
 |-------|--------|----------|--------|
@@ -380,9 +495,9 @@ OpenGL ES / Vulkan
 
 ---
 
-## 8. 典型 IP 对比
+## 9. 典型 IP 对比
 
-### 8.1 2.5D GPU IP
+### 9.1 2.5D GPU IP
 
 | IP 名称 | 供应商 | 性能 | 面积 | 特点 |
 |--------|-------|------|------|------|
@@ -391,7 +506,7 @@ OpenGL ES / Vulkan
 | **Nema|GPU** | Think Silicon | 1.2 Gpix/s | 0.6 mm² | 超低功耗 |
 | **Dave2D** | Renesas | 1.0 Gpix/s | 0.5 mm² | 车规认证 |
 
-### 8.2 3D GPU IP
+### 9.2 3D GPU IP
 
 | IP 名称 | 供应商 | 性能 | 面积 | 特点 |
 |--------|-------|------|------|------|
@@ -402,9 +517,9 @@ OpenGL ES / Vulkan
 
 ---
 
-## 9. 总结
+## 10. 总结
 
-### 9.1 核心结论
+### 10.1 核心结论
 
 | 维度 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
@@ -415,13 +530,13 @@ OpenGL ES / Vulkan
 | **功耗** | 低（<50 mW） | 中（<300 mW） | 高（<1000 mW） |
 | **集成难度** | 简单 | 中等 | 复杂 |
 
-### 9.2 设计建议
+### 10.2 设计建议
 
 1. **成本敏感型产品**：选择 2D GPU，搭配 PSRAM，AHB 总线
 2. **中端显示产品**：选择 2.5D GPU，搭配 DDR3，AXI-64 总线
 3. **高端图形产品**：选择 3D GPU，搭配 DDR3/DDR4，AXI-128 总线，需要 MMU
 
-### 9.3 关键设计检查点
+### 10.3 关键设计检查点
 
 - [ ] 内存带宽是否满足峰值需求（建议 2x 余量）
 - [ ] 总线仲裁是否支持 QoS
