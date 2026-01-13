@@ -23,6 +23,371 @@
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
       <script src="../../_static/copybutton.js?v=f281be69"></script>
       <script src="../../_static/translations.js?v=beaddf03"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
       <script src="../../_static/js/pdf-viewer.js?v=a39b150e"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="索引" href="../../genindex.html" />
@@ -64,11 +429,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#id2">1. 基础概念</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#gpu">1.1 三类 GPU 定位</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#id3">1.2 核心区别</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">1.3 核心区别一句话总结</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#id4">2. 工作原理对比（芯片设计视角）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">2. 工作原理对比（芯片设计视角）</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#d-gpu">2.1 2D GPU 工作流程</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id5">2.2 2.5D GPU 工作流程</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#d-gpu-verisilicon-gcnanoultrav">2.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#id6">2.3 3D GPU 工作流程</a></li>
 </ul>
 </li>
@@ -168,20 +534,24 @@
 <thead>
 <tr class="row-odd"><th class="head"><p>类型</p></th>
 <th class="head"><p>定位</p></th>
+<th class="head"><p>形象比喻</p></th>
 <th class="head"><p>典型 IP</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><strong>2D GPU</strong></p></td>
 <td><p>平面图形加速</p></td>
+<td><p>在纸上画画</p></td>
 <td><p>STM32 DMA2D, NXP PXP</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>2.5D GPU</strong></p></td>
 <td><p>平面图形 + 变形 + 矢量</p></td>
-<td><p>Vivante GC320, Think Silicon Nema</p></td>
+<td><p>折纸、翻书页</p></td>
+<td><p>VeriSilicon GCNanoUltraV, Think Silicon Nema</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>3D GPU</strong></p></td>
 <td><p>完整三维渲染</p></td>
+<td><p>搭建乐高模型</p></td>
 <td><p>ARM Mali, Vivante GC7000, PowerVR</p></td>
 </tr>
 </tbody>
@@ -210,7 +580,7 @@
 </tr>
 <tr class="row-even"><td><p><strong>深度缓冲</strong></p></td>
 <td><p>无</p></td>
-<td><p>有限</p></td>
+<td><p>无</p></td>
 <td><p>完整</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>着色器</strong></p></td>
@@ -221,29 +591,33 @@
 </tbody>
 </table>
 </section>
+<section id="id4">
+<h3>1.3 核心区别一句话总结<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<p><strong>2D GPU</strong>：固定功能的平面合成与像素处理，无深度与光照
+<strong>2.5D GPU</strong>：路径/图元+矩阵变换与涂装，呈“伪 3D”，不含深度/光照
+<strong>3D GPU</strong>：可编程管线（着色器）含深度/光照/材质，渲染真实三维</p>
+</section>
 </section>
 <hr class="docutils" />
-<section id="id4">
-<h2>2. 工作原理对比（芯片设计视角）<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<section id="id5">
+<h2>2. 工作原理对比（芯片设计视角）<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
 <section id="d-gpu">
 <h3>2.1 2D GPU 工作流程<a class="headerlink" href="#d-gpu" title="Link to this heading"></a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌─────────────────────────────────────────────────────────────┐
-│                        2D GPU 架构                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令寄存器 ──→ 2D 引擎 ──→ 帧缓冲                │
-│                            │                                │
-│                         DMA 控制器                          │
-│                            │                                │
-│                      ┌─────┴─────┐                          │
-│                      ↓           ↓                          │
-│                   源地址      目标地址                       │
-│                  (RAM)        (RAM)                         │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-</pre></div>
-</div>
-<p><strong>工作方式</strong>：</p>
+<pre  class="mermaid">
+        flowchart LR
+  CPU[CPU] --&gt; REG[命令寄存器/配置]
+  REG --&gt; DMA[DMA 控制器]
+  DMA --&gt; SRC[(源图像/图层 RAM)]
+  SRC --&gt; BLT[2D 引擎]
+  subgraph 像素处理流水线
+    BLT --&gt; CSC[颜色与格式转换]
+    CSC --&gt; SCALE[缩放与旋转]
+    SCALE --&gt; ROP[Alpha 与 ROP 合成]
+    ROP --&gt; CLIP[剪裁]
+    CLIP --&gt; DITHER[抖动]
+  end
+  DITHER --&gt; FB[(帧缓冲 RAM)]
+    </pre><p><strong>工作方式</strong>：</p>
 <ol class="arabic simple">
 <li><p>CPU 配置寄存器（源地址、目标地址、操作类型）</p></li>
 <li><p>DMA 从源地址读取数据</p></li>
@@ -258,75 +632,75 @@
 <li><p>无需复杂调度</p></li>
 </ul>
 </section>
-<section id="id5">
-<h3>2.2 2.5D GPU 工作流程<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌─────────────────────────────────────────────────────────────┐
-│                       2.5D GPU 架构                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令队列 ──→ 命令解析器                           │
-│              │                                              │
-│              ↓                                              │
-│   ┌──────────────────────────────────────────┐              │
-│   │              渲染管线                     │              │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐  │              │
-│   │  │ 顶点    │→ │ 纹理    │→ │ 混合    │  │              │
-│   │  │ 变换    │  │ 采样    │  │ 输出    │  │              │
-│   │  └─────────┘  └─────────┘  └─────────┘  │              │
-│   └──────────────────────────────────────────┘              │
-│         ↑              ↑              ↓                     │
-│    顶点缓存       纹理缓存       帧缓冲                      │
-│      (RAM)         (RAM)         (RAM)                      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-</pre></div>
-</div>
-<p><strong>工作方式</strong>：</p>
+<section id="d-gpu-verisilicon-gcnanoultrav">
+<h3>2.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）<a class="headerlink" href="#d-gpu-verisilicon-gcnanoultrav" title="Link to this heading"></a></h3>
+<pre  class="mermaid">
+        flowchart LR
+  CPU[CPU] --&gt; CB[命令缓冲与队列]
+  CB --&gt; CP[命令解析器]
+  CP --&gt; DECODE
+  subgraph 路径渲染管线
+    DECODE[路径解码] --&gt; TESS[路径三角化与细分]
+    TESS --&gt; RASTER[光栅化与覆盖]
+    RASTER --&gt; PAINT[涂装]
+    PAINT --&gt; AA[抗锯齿]
+    AA --&gt; BLEND[混合输出]
+  end
+  VBUF[路径与顶点缓冲] --&gt; DECODE
+  TEX[纹理缓存] --&gt; PAINT
+  BLEND --&gt; FB[帧缓冲]
+    </pre><p><strong>工作方式</strong>：</p>
 <ol class="arabic simple">
 <li><p>CPU 提交命令到命令队列（Command Buffer）</p></li>
 <li><p>GPU 异步执行命令</p></li>
-<li><p>顶点变换：对顶点坐标进行矩阵变换（旋转、缩放、透视）</p></li>
-<li><p>纹理采样：从纹理缓存读取像素</p></li>
-<li><p>混合输出：Alpha 混合后写入帧缓冲</p></li>
-<li><p>支持矢量路径光栅化（OpenVG）</p></li>
+<li><p>路径解码与细分：解析 OpenVG 路径并进行三角化</p></li>
+<li><p>光栅化与覆盖：生成覆盖掩码与像素候选</p></li>
+<li><p>涂装与采样：纯色、渐变与图像涂装（支持纹理采样）</p></li>
+<li><p>抗锯齿与混合：曲线抗锯齿与 Alpha 混合，写入帧缓冲</p></li>
 </ol>
 <p><strong>硬件特点</strong>：</p>
 <ul class="simple">
-<li><p>操作单位：图元（三角形、路径）</p></li>
-<li><p>数据流：随机读取（纹理采样）</p></li>
-<li><p>需要命令队列管理</p></li>
+<li><p>操作单位：路径/图元（OpenVG 路径、三角形）</p></li>
+<li><p>管线模块：路径解码、细分、光栅化、涂装、抗锯齿、混合</p></li>
+<li><p>变换支持：平移/缩放/旋转/透视（矩阵变换）</p></li>
+<li><p>采样与涂装：纯色、线性/径向渐变、图像纹理</p></li>
+<li><p>同步与调度：命令队列与异步执行</p></li>
+</ul>
+<p>参考资料（下载）：</p>
+<ul class="simple">
+<li><p>VeriSilicon 2.5D GPU IP – GCNanoUltraV v1.1: <code class="docutils literal notranslate"><span class="pre">_static/refs/VeriSilicon</span> <span class="pre">2.5D</span> <span class="pre">GPU</span> <span class="pre">IP</span> <span class="pre">–</span> <span class="pre">GCNanoUltraV</span> <span class="pre">-</span> <span class="pre">Dec'2020</span> <span class="pre">v1.1</span> <span class="pre">-</span> <span class="pre">Realtek</span> <span class="pre">1.pdf</span></code></p></li>
+<li><p>VeriSilicon Nano 2.5D/3D GPU Introduction Q2 2025: <code class="docutils literal notranslate"><span class="pre">_static/refs/(Realtek)</span> <span class="pre">VeriSilicon</span> <span class="pre">Nano</span> <span class="pre">2.5D_3D</span> <span class="pre">GPU</span> <span class="pre">Introduction</span> <span class="pre">-</span> <span class="pre">Q2</span> <span class="pre">2025</span> <span class="pre">V1.0</span> <span class="pre">2.pdf</span></code></p></li>
+<li><p>GCNanoUltraV Features/Integration/Registers: <code class="docutils literal notranslate"><span class="pre">_static/refs/Vivante.GCNanoUltraV.V20x.Hardware.Features-v0.89-D-20230224.pdf</span></code>, <code class="docutils literal notranslate"><span class="pre">_static/refs/Vivante.GCNanoUltraV.Series.V20x.Hardware.Integration-v0.88-D-20230223.pdf</span></code>, <code class="docutils literal notranslate"><span class="pre">_static/refs/Vivante.GCNanoUltraV.V2.0.0.Accessible.Registers-0x00000435-v0.80_rc3z-B-20240513.pdf</span></code></p></li>
 </ul>
 </section>
 <section id="id6">
 <h3>2.3 3D GPU 工作流程<a class="headerlink" href="#id6" title="Link to this heading"></a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌─────────────────────────────────────────────────────────────┐
-│                        3D GPU 架构                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令队列 ──→ 命令处理器                           │
-│              │                                              │
-│              ↓                                              │
-│   ┌──────────────────────────────────────────────────────┐  │
-│   │                    可编程渲染管线                     │  │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐ │  │
-│   │  │ 顶点    │→ │ 图元    │→ │ 光栅化  │→ │ 片段    │ │  │
-│   │  │ 着色器  │  │ 装配    │  │         │  │ 着色器  │ │  │
-│   │  └─────────┘  └─────────┘  └─────────┘  └─────────┘ │  │
-│   │       ↓                                      ↓       │  │
-│   │  ┌─────────┐                            ┌─────────┐ │  │
-│   │  │ 统一    │←─────────────────────────→ │ 纹理    │ │  │
-│   │  │ 着色器  │                            │ 单元    │ │  │
-│   │  │ 核心    │                            │         │ │  │
-│   │  └─────────┘                            └─────────┘ │  │
-│   └──────────────────────────────────────────────────────┘  │
-│         ↑              ↑              ↑           ↓         │
-│    顶点缓存       纹理缓存       深度缓存     帧缓冲         │
-│      (RAM)         (RAM)         (RAM)       (RAM)          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-</pre></div>
-</div>
-<p><strong>工作方式</strong>：</p>
+<pre  class="mermaid">
+        flowchart LR
+  CPU[CPU] --&gt; CMDQ[命令队列]
+  CMDQ --&gt; FE[命令处理器]
+
+  subgraph 渲染管线
+    FE --&gt; IA[输入装配]
+    IA --&gt; VS[顶点着色器]
+    VS --&gt; RS[光栅化]
+    RS --&gt; EZ[早期深度]
+    EZ --&gt; PS[片段着色器]
+    PS --&gt; DT[深度模板测试]
+    DT --&gt; BLEND[颜色混合]
+    BLEND --&gt; OUT[颜色写入]
+  end
+
+  OUT --&gt; FB[帧缓冲]
+
+  subgraph 缓存资源
+    VBO[顶点与索引缓冲] --&gt; IA
+    UBO[统一常量缓冲] --&gt; VS
+    TEXU[纹理采样器] --&gt; PS
+    ZB[深度模板缓冲] --&gt; EZ
+    PS --&gt; ZB
+  end
+    </pre><p><strong>工作方式</strong>：</p>
 <ol class="arabic simple">
 <li><p>CPU 提交绘制命令和着色器程序</p></li>
 <li><p>顶点着色器：可编程顶点处理（变换、光照预计算）</p></li>
@@ -526,27 +900,32 @@
 <section id="id13">
 <h3>4.2 典型总线配置<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
 <p><strong>2D GPU（低成本方案）</strong>：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>CPU ←──AHB──→ 2D GPU ←──AHB──→ SRAM/PSRAM
-                                 (1-4 MB)
-</pre></div>
-</div>
+<pre  class="mermaid">
+        flowchart LR
+  subgraph 系统总线
+    CPU[CPU] --&gt;|AHB| GPU2D[2D GPU]
+    GPU2D --&gt;|AHB| MEM[SRAM PSRAM]
+  end
+    </pre><p>备注：PSRAM 容量 1–4 MB</p>
 <p><strong>2.5D GPU（中端方案）</strong>：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                    ┌──────────────────┐
-CPU ←──AXI64──→    │   AXI 互联       │ ←──AXI64──→ DDR Controller
-                    │   (QoS 仲裁)     │              (DDR3-800)
-2.5D GPU ←─AXI64──→ │                  │
-                    └──────────────────┘
-</pre></div>
-</div>
+<pre  class="mermaid">
+        flowchart LR
+  subgraph AXI互联
+    CPU[CPU] --&gt;|AXI64| IC[互联 QoS]
+    GPU25D[2.5D GPU] --&gt;|AXI64| IC
+    IC --&gt;|AXI64| DDR[DDR 控制器]
+  end
+    </pre><p>备注：内存控制器 DDR3 800</p>
 <p><strong>3D GPU（高性能方案）</strong>：</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                    ┌──────────────────┐
-CPU ←──AXI128──→   │   AXI 互联       │ ←──AXI128──→ DDR Controller
-                    │   (QoS + MMU)    │               (DDR3-1600)
-3D GPU ←─AXI128──→ │                  │
-                    │                  │ ←──AXI64───→ Display Controller
-                    └──────────────────┘
-</pre></div>
-</div>
+<pre  class="mermaid">
+        flowchart LR
+  subgraph AXI互联
+    CPU[CPU] --&gt;|AXI128| IC[互联 QoS MMU]
+    GPU3D[3D GPU] --&gt;|AXI128| IC
+    IC --&gt;|AXI128| DDR[DDR 控制器]
+    IC --&gt;|AXI64| DISP[显示控制器]
+  end
+    </pre><p>备注：内存控制器 DDR3 1600</p>
 </section>
 <section id="id14">
 <h3>4.3 总线带宽分配建议<a class="headerlink" href="#id14" title="Link to this heading"></a></h3>

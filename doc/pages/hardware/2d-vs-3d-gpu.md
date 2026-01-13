@@ -10,11 +10,11 @@
 
 ### 1.1 三类 GPU 定位
 
-| 类型 | 定位 | 典型 IP |
-|-----|------|---------|
-| **2D GPU** | 平面图形加速 | STM32 DMA2D, NXP PXP |
-| **2.5D GPU** | 平面图形 + 变形 + 矢量 | Vivante GC320, Think Silicon Nema |
-| **3D GPU** | 完整三维渲染 | ARM Mali, Vivante GC7000, PowerVR |
+| 类型 | 定位 | 形象比喻 | 典型 IP |
+|-----|------|---------|---------|
+| **2D GPU** | 平面图形加速 | 在纸上画画 |STM32 DMA2D, NXP PXP |
+| **2.5D GPU** | 平面图形 + 变形 + 矢量 | 折纸、翻书页 |VeriSilicon GCNanoUltraV, Think Silicon Nema |
+| **3D GPU** | 完整三维渲染 | 搭建乐高模型 |ARM Mali, Vivante GC7000, PowerVR |
 
 ### 1.2 核心区别
 
@@ -22,30 +22,87 @@
 |-------|--------|----------|--------|
 | **渲染管线** | 固定功能 | 半固定 | 可编程 |
 | **光照计算** | 无 | 无 | 有 |
-| **深度缓冲** | 无 | 有限 | 完整 |
+| **深度缓冲** | 无 | 无 | 完整 |
 | **着色器** | 无 | 无 | 有 |
 
+### 1.3 核心区别一句话总结
+
+ **2D GPU**：固定功能的平面合成与像素处理，无深度与光照
+ **2.5D GPU**：路径/图元+矩阵变换与涂装，呈“伪 3D”，不含深度/光照
+ **3D GPU**：可编程管线（着色器）含深度/光照/材质，渲染真实三维
+
+
+### 1.4 相关软件 API 概念
+
+| API | 类型 | 用途 | 对应 GPU |
+|-----|------|------|---------|
+| **OpenVG** | 2D 矢量图形 | 矢量路径渲染、抗锯齿、渐变填充 | 2.5D GPU |
+| **OpenGL** | 3D 图形 | 桌面级 3D 渲染（完整特性） | 3D GPU |
+| **OpenGL ES 2.0** | 3D 图形（嵌入式） | 移动/嵌入式 3D 渲染（可编程着色器） | 3D GPU |
+| **OpenCV** | 计算机视觉 | 图像处理、特征检测、机器视觉 | 通用计算 |
+| **OpenCL** | 并行计算 | GPU 通用计算、数据并行处理 | 3D GPU（计算核心） |
+
+#### API 详细说明
+
+**OpenVG 1.1**：
+- 专为 2D 矢量图形设计的硬件加速 API
+- 支持路径填充/描边、贝塞尔曲线、渐变、图像滤镜
+- 典型应用：车载仪表、UI 动画、SVG 渲染
+- 硬件需求：2.5D GPU（如 Vivante GC320、GCNanoUltraV）
+
+**OpenGL / OpenGL ES 2.0**：
+- OpenGL：桌面完整版，支持几何着色器、曲面细分等高级特性
+- OpenGL ES 2.0：嵌入式精简版，保留可编程着色器（顶点/片段着色器）
+- 典型应用：3D 游戏、导航、AR/VR
+- 硬件需求：3D GPU（Mali、PowerVR、Vivante GC7000）
+
+**OpenCV**：
+- 计算机视觉库，非图形渲染 API
+- 功能：图像滤波、边缘检测、目标识别、相机标定
+- 可利用 GPU 加速（通过 OpenCL 或 CUDA）
+- 典型应用：ADAS、人脸识别、工业检测
+
+**OpenCL**：
+- 异构并行计算框架，将 GPU 作为通用计算设备
+- 支持数据并行、任务并行、向量运算
+- 典型应用：图像处理、机器学习推理、科学计算
+- 硬件需求：支持计算的 3D GPU（Mali 支持 OpenCL 2.0）
+
+#### API 与 GPU 类型对应关系
+
+```
+2D GPU (DMA2D, PXP)
+  └─ 无标准 API，直接寄存器操作或厂商 HAL
+
+2.5D GPU (GC320, GCNanoUltraV)
+  ├─ OpenVG 1.1 (矢量图形)
+  └─ 私有 2D API (BitBlt, Alpha 混合)
+
+3D GPU (Mali, PowerVR, GC7000)
+  ├─ OpenGL ES 2.0/3.x (3D 渲染)
+  ├─ Vulkan (低开销 3D API)
+  └─ OpenCL 1.2/2.0 (通用计算)
+```
 ---
 
 ## 2. 工作原理对比（芯片设计视角）
 
 ### 2.1 2D GPU 工作流程
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        2D GPU 架构                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令寄存器 ──→ 2D 引擎 ──→ 帧缓冲                │
-│                            │                                │
-│                         DMA 控制器                          │
-│                            │                                │
-│                      ┌─────┴─────┐                          │
-│                      ↓           ↓                          │
-│                   源地址      目标地址                       │
-│                  (RAM)        (RAM)                         │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> REG[命令寄存器/配置]
+  REG --> DMA[DMA 控制器]
+  DMA --> SRC[(源图像/图层 RAM)]
+  SRC --> BLT[2D 引擎]
+  subgraph 像素处理流水线
+    BLT --> CSC[颜色与格式转换]
+    CSC --> SCALE[缩放与旋转]
+    SCALE --> ROP[Alpha 与 ROP 合成]
+    ROP --> CLIP[剪裁]
+    CLIP --> DITHER[抖动]
+  end
+  DITHER --> FB[(帧缓冲 RAM)]
 ```
 
 **工作方式**：
@@ -60,71 +117,102 @@
 - 数据流：线性读写
 - 无需复杂调度
 
-### 2.2 2.5D GPU 工作流程
+### 2.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
 
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> CB[命令缓冲与队列]
+  CB --> CP[命令解析器]
+  CP --> DECODE
+  subgraph 路径渲染管线
+    DECODE[路径解码] --> TESS[路径三角化与细分]
+    TESS --> RASTER[光栅化与覆盖]
+    RASTER --> PAINT[涂装]
+    PAINT --> AA[抗锯齿]
+    AA --> BLEND[混合输出]
+  end
+  VBUF[路径与顶点缓冲] --> DECODE
+  TEX[纹理缓存] --> PAINT
+  BLEND --> FB[帧缓冲]
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       2.5D GPU 架构                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令队列 ──→ 命令解析器                           │
-│              │                                              │
-│              ↓                                              │
-│   ┌──────────────────────────────────────────┐              │
-│   │              渲染管线                     │              │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐  │              │
-│   │  │ 顶点    │→ │ 纹理    │→ │ 混合    │  │              │
-│   │  │ 变换    │  │ 采样    │  │ 输出    │  │              │
-│   │  └─────────┘  └─────────┘  └─────────┘  │              │
-│   └──────────────────────────────────────────┘              │
-│         ↑              ↑              ↓                     │
-│    顶点缓存       纹理缓存       帧缓冲                      │
-│      (RAM)         (RAM)         (RAM)                      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+
+```{mermaid}
+flowchart TD
+    %% Google Style Colors
+    classDef blue fill:#E8F0FE,stroke:#4285F4,stroke-width:2px,color:#000;
+    classDef green fill:#E6F4EA,stroke:#34A853,stroke-width:2px,color:#000;
+    classDef red fill:#FCE8E6,stroke:#EA4335,stroke-width:2px,color:#000;
+
+    subgraph GPU_Pipeline ["GPU 硬件流水线"]
+        direction TB
+        
+        Input[("顶点数据 (Vertices)\n3个点定义一个三角形")]:::blue
+        
+        Step1["1. 顶点处理 (Vertex Processing)\n矩阵变换"]:::green
+        note1["计算旋转、缩放、透视\n将3D空间坐标转为2D屏幕坐标"]:::green
+        
+        Step2["2. 光栅化 (Rasterization)\n核心步骤"]:::red
+        note2["找出三角形覆盖了哪些像素\n(将三角形打碎成像素)"]:::red
+        
+        Step3["3. 像素着色 (Pixel Shading)\n填色"]:::blue
+        note3["计算每个像素的颜色\n(贴纹理、算光照)"]:::blue
+        
+    end
+
+    Input --> Step1
+    Step1 --> Step2
+    Step2 --> Step3
+    Step3 --> Output[("屏幕显示的图像")]
 ```
+
 
 **工作方式**：
 1. CPU 提交命令到命令队列（Command Buffer）
 2. GPU 异步执行命令
-3. 顶点变换：对顶点坐标进行矩阵变换（旋转、缩放、透视）
-4. 纹理采样：从纹理缓存读取像素
-5. 混合输出：Alpha 混合后写入帧缓冲
-6. 支持矢量路径光栅化（OpenVG）
+3. 路径解码与细分：解析 OpenVG 路径并进行三角化
+4. 光栅化与覆盖：生成覆盖掩码与像素候选
+5. 涂装与采样：纯色、渐变与图像涂装（支持纹理采样）
+6. 抗锯齿与混合：曲线抗锯齿与 Alpha 混合，写入帧缓冲
 
 **硬件特点**：
-- 操作单位：图元（三角形、路径）
-- 数据流：随机读取（纹理采样）
-- 需要命令队列管理
+- 操作单位：路径/图元（OpenVG 路径、三角形）
+- 管线模块：路径解码、细分、光栅化、涂装、抗锯齿、混合
+- 变换支持：平移/缩放/旋转/透视（矩阵变换）
+- 采样与涂装：纯色、线性/径向渐变、图像纹理
+- 同步与调度：命令队列与异步执行
+
+参考资料（下载）：
+- VeriSilicon 2.5D GPU IP – GCNanoUltraV v1.1: `_static/refs/VeriSilicon 2.5D GPU IP – GCNanoUltraV - Dec'2020 v1.1 - Realtek 1.pdf`
+- VeriSilicon Nano 2.5D/3D GPU Introduction Q2 2025: `_static/refs/(Realtek) VeriSilicon Nano 2.5D_3D GPU Introduction - Q2 2025 V1.0 2.pdf`
+- GCNanoUltraV Features/Integration/Registers: `_static/refs/Vivante.GCNanoUltraV.V20x.Hardware.Features-v0.89-D-20230224.pdf`, `_static/refs/Vivante.GCNanoUltraV.Series.V20x.Hardware.Integration-v0.88-D-20230223.pdf`, `_static/refs/Vivante.GCNanoUltraV.V2.0.0.Accessible.Registers-0x00000435-v0.80_rc3z-B-20240513.pdf`
 
 ### 2.3 3D GPU 工作流程
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        3D GPU 架构                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│   CPU ──→ 命令队列 ──→ 命令处理器                           │
-│              │                                              │
-│              ↓                                              │
-│   ┌──────────────────────────────────────────────────────┐  │
-│   │                    可编程渲染管线                     │  │
-│   │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐ │  │
-│   │  │ 顶点    │→ │ 图元    │→ │ 光栅化  │→ │ 片段    │ │  │
-│   │  │ 着色器  │  │ 装配    │  │         │  │ 着色器  │ │  │
-│   │  └─────────┘  └─────────┘  └─────────┘  └─────────┘ │  │
-│   │       ↓                                      ↓       │  │
-│   │  ┌─────────┐                            ┌─────────┐ │  │
-│   │  │ 统一    │←─────────────────────────→ │ 纹理    │ │  │
-│   │  │ 着色器  │                            │ 单元    │ │  │
-│   │  │ 核心    │                            │         │ │  │
-│   │  └─────────┘                            └─────────┘ │  │
-│   └──────────────────────────────────────────────────────┘  │
-│         ↑              ↑              ↑           ↓         │
-│    顶点缓存       纹理缓存       深度缓存     帧缓冲         │
-│      (RAM)         (RAM)         (RAM)       (RAM)          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> CMDQ[命令队列]
+  CMDQ --> FE[命令处理器]
+
+  subgraph 渲染管线
+    FE --> IA[输入装配]
+    IA --> VS[顶点着色器]
+    VS --> RS[光栅化]
+    RS --> EZ[早期深度]
+    EZ --> PS[片段着色器]
+    PS --> DT[深度模板测试]
+    DT --> BLEND[颜色混合]
+    BLEND --> OUT[颜色写入]
+  end
+
+  OUT --> FB[帧缓冲]
+
+  subgraph 缓存资源
+    VBO[顶点与索引缓冲] --> IA
+    UBO[统一常量缓冲] --> VS
+    TEXU[纹理采样器] --> PS
+    ZB[深度模板缓冲] --> EZ
+    PS --> ZB
+  end
 ```
 
 **工作方式**：
@@ -197,29 +285,37 @@
 ### 4.2 典型总线配置
 
 **2D GPU（低成本方案）**：
+```{mermaid}
+flowchart LR
+  subgraph 系统总线
+    CPU[CPU] -->|AHB| GPU2D[2D GPU]
+    GPU2D -->|AHB| MEM[SRAM PSRAM]
+  end
 ```
-CPU ←──AHB──→ 2D GPU ←──AHB──→ SRAM/PSRAM
-                                 (1-4 MB)
-```
+备注：PSRAM 容量 1–4 MB
 
 **2.5D GPU（中端方案）**：
+```{mermaid}
+flowchart LR
+  subgraph AXI互联
+    CPU[CPU] -->|AXI64| IC[互联 QoS]
+    GPU25D[2.5D GPU] -->|AXI64| IC
+    IC -->|AXI64| DDR[DDR 控制器]
+  end
 ```
-                    ┌──────────────────┐
-CPU ←──AXI64──→    │   AXI 互联       │ ←──AXI64──→ DDR Controller
-                    │   (QoS 仲裁)     │              (DDR3-800)
-2.5D GPU ←─AXI64──→ │                  │
-                    └──────────────────┘
-```
+备注：内存控制器 DDR3 800
 
 **3D GPU（高性能方案）**：
+```{mermaid}
+flowchart LR
+  subgraph AXI互联
+    CPU[CPU] -->|AXI128| IC[互联 QoS MMU]
+    GPU3D[3D GPU] -->|AXI128| IC
+    IC -->|AXI128| DDR[DDR 控制器]
+    IC -->|AXI64| DISP[显示控制器]
+  end
 ```
-                    ┌──────────────────┐
-CPU ←──AXI128──→   │   AXI 互联       │ ←──AXI128──→ DDR Controller
-                    │   (QoS + MMU)    │               (DDR3-1600)
-3D GPU ←─AXI128──→ │                  │
-                    │                  │ ←──AXI64───→ Display Controller
-                    └──────────────────┘
-```
+备注：内存控制器 DDR3 1600
 
 ### 4.3 总线带宽分配建议
 
