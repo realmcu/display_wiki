@@ -1,0 +1,14 @@
+[Unit]
+Description=Display Wiki Documentation Server
+After=network.target
+
+[Service]
+Type=simple
+User=howie_wang
+WorkingDirectory=/home/howie_wang/workspace/display_wiki
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /home/howie_wang/workspace/display_wiki/site
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

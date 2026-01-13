@@ -162,6 +162,85 @@ http://<Windows主机IP>:8080
 
 详见 `AGENTS.md` 文档规范。
 
+## 配置 systemd 服务
+
+### 用户级服务（推荐）
+
+配置用户级 systemd 服务，实现开机自启和崩溃自动重启，无需 sudo 权限。
+
+#### 1. 创建服务文件
+
+```bash
+mkdir -p ~/.config/systemd/user
+```
+
+创建 `~/.config/systemd/user/display-wiki.service`：
+
+```ini
+[Unit]
+Description=Display Wiki Documentation Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/YOUR_USERNAME/workspace/display_wiki
+ExecStart=/usr/bin/python3 -m http.server 8080 --directory /home/YOUR_USERNAME/workspace/display_wiki/site
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
+**注意**：将 `YOUR_USERNAME` 替换为你的用户名。
+
+#### 2. 启用并启动服务
+
+```bash
+# 重载配置
+systemctl --user daemon-reload
+
+# 启用开机自启
+systemctl --user enable display-wiki
+
+# 启动服务
+systemctl --user start display-wiki
+
+# 查看状态
+systemctl --user status display-wiki
+```
+
+#### 3. 启用持久化（可选）
+
+即使未登录也自动运行服务：
+
+```bash
+loginctl enable-linger $USER
+```
+
+#### 4. 常用管理命令
+
+```bash
+# 查看状态
+systemctl --user status display-wiki
+
+# 停止服务
+systemctl --user stop display-wiki
+
+# 重启服务
+systemctl --user restart display-wiki
+
+# 查看日志
+journalctl --user -u display-wiki -f
+
+# 禁用开机自启
+systemctl --user disable display-wiki
+```
+
+### 系统级服务（需要 root 权限）
+
+如需系统级服务，将服务文件放在 `/etc/systemd/system/display-wiki.service`，并使用 `sudo systemctl` 命令管理。
+
 ## 许可证
 
 （待补充）
