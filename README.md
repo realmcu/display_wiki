@@ -164,54 +164,56 @@ http://<Windows主机IP>:8080
 
 ## 配置 systemd 服务
 
-### 用户级服务（手动创建示例）
+### 一键安装（推荐）
 
-以下示例演示如何在 Linux 上使用 `systemd --user` 手动创建并管理一个服务，以在后台长期托管本仓库构建后的静态站点。示例不依赖仓库内自带服务文件，需自行填写实际路径。
+项目提供了自动安装脚本，一键配置用户级 systemd 服务：
 
-- 预构建站点：
-  - `scripts/build_docs.sh`，或 `sphinx-build -b html doc site`
-- 创建用户级服务文件：
-  - `mkdir -p ~/.config/systemd/user`
-  - 编辑 `~/.config/systemd/user/display-wiki.service`（文件名可自定义）：
-
-```ini
-[Unit]
-Description=Display Wiki static site (user service)
-After=network.target
-
-[Service]
-Type=simple
-# 将此路径改为你的仓库目录
-WorkingDirectory=/path/to/display_wiki
-# 如使用虚拟环境，可改为 /path/to/display_wiki/.venv/bin/python
-ExecStart=/usr/bin/python3 -m http.server 8080 --directory /path/to/display_wiki/site
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
+```bash
+./install-service.sh
 ```
 
-- 启用与管理：
-  - `systemctl --user daemon-reload`
-  - `systemctl --user enable display-wiki`
-  - `systemctl --user start display-wiki`
-  - `systemctl --user status display-wiki`
+脚本会自动：
+1. 创建 `~/.config/systemd/user/display-wiki.service`
+2. 自动替换项目路径
+3. 启用并启动服务（监听 `0.0.0.0:8080`，支持局域网访问）
+4. 配置开机自启动（登录后自动运行）
 
-- 常用命令：
-  - 停止：`systemctl --user stop display-wiki`
-  - 重启：`systemctl --user restart display-wiki`
-  - 查看日志：`journalctl --user -u display-wiki -f`
-  - 取消开机自启：`systemctl --user disable display-wiki`
+**访问地址：**
+- 本机：`http://localhost:8080`
+- 局域网：`http://<本机IP>:8080`（获取 IP：`hostname -I`）
 
-- 可选：启用持久化运行（未登录也运行）
-  - `loginctl enable-linger $USER`
+**注意**：浏览器可能提示"不安全"（HTTP 协议），这是正常的，局域网访问静态文档可以忽略。
 
-> 提示：如需更换端口或目录，修改 `ExecStart` 中的端口和 `/path/to/display_wiki/site`。确保 `site/` 已构建且包含静态文件。
+### 常用命令
 
-### 系统级服务（可选，需要 root 权限）
+```bash
+# 查看状态
+systemctl --user status display-wiki
 
-若希望系统层面托管，可在 `/etc/systemd/system/` 下创建类似的服务文件，并使用 `sudo systemctl` 管理。但对于个人开发与预览，建议优先使用用户级服务或直接运行 `./serve.sh -p 8000 -d site`。
+# 停止/启动/重启
+systemctl --user stop display-wiki
+systemctl --user start display-wiki
+systemctl --user restart display-wiki
+
+# 查看日志
+journalctl --user -u display-wiki -f
+
+# 禁用自启动
+systemctl --user disable display-wiki
+
+# 完全卸载服务
+./uninstall-service.sh
+```
+
+### 可选：未登录时也运行
+
+```bash
+loginctl enable-linger $USER
+```
+
+### 手动配置
+
+如需自定义配置，可参考 `systemd/display-wiki.service.template` 模板文件，手动创建服务。
 
 ## 许可证
 
