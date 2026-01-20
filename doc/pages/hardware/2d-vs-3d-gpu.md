@@ -23,14 +23,17 @@
 | **渲染管线** | 固定功能 | 半固定 | 可编程 |
 | **光照计算** | 无 | 无 | 有 |
 | **深度缓冲** | 无 | 无 | 完整 |
-| **着色器** | 无 | 无 | 有 |
+| **透明度** | 有 | 有 | 并非标配 |
+| **着色器** | 有 | 有 | 有 |
+
 
 ### 1.3 核心区别一句话总结
 
  **2D GPU**：固定功能的平面合成与像素处理，无深度与光照
  **2.5D GPU**：路径/图元+矩阵变换与涂装，呈“伪 3D”，不含深度/光照
- **3D GPU**：可编程管线（着色器）含深度/光照/材质，渲染真实三维
+ **3D GPU**：可编程管线（着色器）含深度/光照/材质，渲染真实三维，但不擅长处理透明度堆叠
 
+ ![2.5D与3D对比示例](./images/compare_with_PPE.png)
 
 ### 1.4 相关软件 API 概念
 
@@ -157,6 +160,18 @@
 
 ## 3. 工作原理对比（芯片设计视角）
 
+**工作方式**：
+1. CPU 配置寄存器（源地址、目标地址、操作类型）
+2. DMA 从源地址读取数据
+3. 2D 引擎执行操作（BitBlt、Alpha 混合等）
+4. DMA 写入目标地址
+5. 完成后产生中断
+
+**硬件特点**：
+- 操作单位：矩形区域
+- 数据流：线性读写
+- 无需复杂调度
+
 ### 3.1 2D GPU 工作流程
 
 ```{mermaid}
@@ -175,19 +190,27 @@ flowchart LR
   DITHER --> FB[(帧缓冲 RAM)]
 ```
 
-**工作方式**：
-1. CPU 配置寄存器（源地址、目标地址、操作类型）
-2. DMA 从源地址读取数据
-3. 2D 引擎执行操作（BitBlt、Alpha 混合等）
-4. DMA 写入目标地址
-5. 完成后产生中断
+### 3.2 2D GPU 工作流程（PPE1.0）
 
-**硬件特点**：
-- 操作单位：矩形区域
-- 数据流：线性读写
-- 无需复杂调度
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> REG[命令寄存器/配置]
+  REG --> DMA[DMA 控制器]
+  SRC[(源图像/图层 RAM)] --> DMA
+  DMA --> CSC[颜色与格式转换]
+  subgraph 像素处理流水线
+    CSC --> SCALE[缩放与旋转]
+    CSC --> BLEND[Alpha混合]
+    SCALE --> CSC2[颜色与格式转换]
+    BLEND --> CSC2[颜色与格式转换]
+  end
+  CSC2 --> DMA2[DMA 控制器]
+  DMA2 --> FB[(帧缓冲 RAM)]
+```
 
-### 3.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
+### 3.3 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
+
+#### 3.3.1 矢量图形
 
 ```{mermaid}
 flowchart LR
@@ -204,35 +227,6 @@ flowchart LR
   VBUF[路径与顶点缓冲] --> DECODE
   TEX[纹理缓存] --> PAINT
   BLEND --> FB[帧缓冲]
-```
-
-```{mermaid}
-flowchart TD
-    %% Google Style Colors
-    classDef blue fill:#E8F0FE,stroke:#4285F4,stroke-width:2px,color:#000;
-    classDef green fill:#E6F4EA,stroke:#34A853,stroke-width:2px,color:#000;
-    classDef red fill:#FCE8E6,stroke:#EA4335,stroke-width:2px,color:#000;
-
-    subgraph GPU_Pipeline ["GPU 硬件流水线"]
-        direction TB
-        
-        Input[("顶点数据 (Vertices)\n3个点定义一个三角形")]:::blue
-        
-        Step1["1. 顶点处理 (Vertex Processing)\n矩阵变换"]:::green
-        note1["计算旋转、缩放、透视\n将3D空间坐标转为2D屏幕坐标"]:::green
-        
-        Step2["2. 光栅化 (Rasterization)\n核心步骤"]:::red
-        note2["找出三角形覆盖了哪些像素\n(将三角形打碎成像素)"]:::red
-        
-        Step3["3. 像素着色 (Pixel Shading)\n填色"]:::blue
-        note3["计算每个像素的颜色\n(贴纹理、算光照)"]:::blue
-        
-    end
-
-    Input --> Step1
-    Step1 --> Step2
-    Step2 --> Step3
-    Step3 --> Output[("屏幕显示的图像")]
 ```
 
 
@@ -255,6 +249,38 @@ flowchart TD
 - VeriSilicon 2.5D GPU IP – GCNanoUltraV v1.1: `_static/refs/VeriSilicon 2.5D GPU IP – GCNanoUltraV - Dec'2020 v1.1 - Realtek 1.pdf`
 - VeriSilicon Nano 2.5D/3D GPU Introduction Q2 2025: `_static/refs/(Realtek) VeriSilicon Nano 2.5D_3D GPU Introduction - Q2 2025 V1.0 2.pdf`
 - GCNanoUltraV Features/Integration/Registers: `_static/refs/Vivante.GCNanoUltraV.V20x.Hardware.Features-v0.89-D-20230224.pdf`, `_static/refs/Vivante.GCNanoUltraV.Series.V20x.Hardware.Integration-v0.88-D-20230223.pdf`, `_static/refs/Vivante.GCNanoUltraV.V2.0.0.Accessible.Registers-0x00000435-v0.80_rc3z-B-20240513.pdf`
+
+#### 3.3.2 标量图形
+
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> GEO[几何计算]
+  IMG[图像] --> FRAG
+  subgraph 图像渲染管线
+    GEO --> GEOEN[几何运算引擎]
+    GEOEN --> FRAG[片段着色器]
+    FRAG --> PIX[像素合成]
+  end
+  PIX --> FB[帧缓冲]
+```
+
+### 3.4 2.5D GPU 工作流程（PPE2.2）
+
+```{mermaid}
+flowchart LR
+  CPU[CPU] --> REG[寄存器设置]
+  REG --> BRU[区域像素遍历]
+  IMG[图源] --> FND
+  subgraph 图像渲染管线
+    BRU --> FND[像素索引]
+    FND --> INT[插值]
+    INT --> BLEND[Alpha混合]
+  end
+  FB[帧缓冲] --> BLEND
+  BLEND --> FB[帧缓冲]
+```
+
+
 
 ### 3.3 3D GPU 工作流程
 
