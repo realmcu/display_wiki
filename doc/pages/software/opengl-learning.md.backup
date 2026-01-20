@@ -1,0 +1,1299 @@
+# OpenGL 可编程管线学习笔记
+
+## OpenGL 渲染流程总览
+
+```{mermaid}
+graph LR
+    subgraph CPU["CPU 端准备"]
+        A[着色器编译]
+        B[矩阵计算 MVP]
+        C[VBO 上传顶点]
+        D[纹理上传]
+        E[Uniform 设置]
+    end
+    
+    subgraph GPU["GPU 渲染管线"]
+        F[顶点着色器]
+        G[光栅化插值]
+        H[片段着色器]
+        I[帧缓冲]
+    end
+    
+    CPU --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J[屏幕]
+    
+    style CPU fill:#ffe6e6
+    style GPU fill:#e6f3ff
+    style J fill:#fff4e6
+```
+
+**数据流**: CPU 准备数据 → GPU 顶点处理 → 光栅化 → 像素着色 → 屏幕显示
+
+**5 个学习步骤对应**:
+1. 着色器编译 (`glCompileShader`)
+2. Uniform 设置 (`glUniform*`)
+3. 矩阵计算 (MVP = Projection × View × Model)
+4. VBO 上传 (`glBufferData`)
+5. 纹理上传 (`glTexImage2D`)
+
+---
+
+## 学习路线
+
+| 步骤 | 主题 | 作用 | 状态 |
+|------|------|------|------|
+| 1 | 最简单的着色器 | 理解顶点和片段着色器的基本结构，实现从固定管线到可编程管线的转变 | ✅ 完成 |
+| 2 | Uniform 变量 | 学习从 CPU 向 GPU 传递参数(如矩阵、颜色、时间)，实现动态控制渲染效果 | ✅ 完成 |
+| 3 | 自定义矩阵 (摆脱 gluPerspective) | 掌握投影和变换矩阵的数学原理，完全控制 3D 空间到 2D 屏幕的映射 | ✅ 完成 |
+| 4 | VBO 顶点缓冲 (摆脱 glBegin/glEnd) | 使用现代 GPU 缓冲机制，大幅提升渲染性能，支持大规模顶点数据 | ✅ 完成 |
+| 5 | 纹理映射 | 为 3D 模型贴图，实现真实感渲染，学习纹理坐标和采样器的使用 | ✅ 完成 |
+
+---
+
+## 核心概念
+
+### 1. 着色器类型
+
+| 着色器 | 执行时机 | 执行次数 | 主要职责 |
+|--------|----------|----------|----------|
+| 顶点着色器 | 每个顶点 | 顶点数 (如 740) | 坐标变换 |
+| 片段着色器 | 每个像素 | 像素数 (如 20万) | 计算颜色 |
+
+### 2. GPU 并行处理
+
+```{mermaid}
+graph LR
+    subgraph CPU["CPU 串行处理"]
+        V0[顶点0] --> V1[顶点1]
+        V1 --> V2[顶点2]
+        V2 --> V3[...]
+    end
+    
+    subgraph GPU["GPU 并行处理 (几千个核心)"]
+        P0[顶点0]
+        P1[顶点1]
+        P2[顶点2]
+        P3[顶点3]
+        P4[...]
+        
+        P0 --> R[同时完成!]
+        P1 --> R
+        P2 --> R
+        P3 --> R
+        P4 --> R
+    end
+    
+    style CPU fill:#ffcccc
+    style GPU fill:#ccffcc
+    style R fill:#ffeb99
+```
+
+---
+
+## 变量类型
+
+### Attribute (属性)
+- **来源**: `glVertex3fv()`, `glNormal3fv()`
+- **特点**: 每个顶点不同
+- **示例**: 顶点位置、法线、纹理坐标
+
+```c
+// CPU 端
+glVertex3fv(pos);    // → gl_Vertex
+glNormal3fv(normal); // → gl_Normal
+```
+
+### Uniform (统一变量)
+- **来源**: `glUniform*()`
+- **特点**: 全局共享，CPU 动态设置
+- **示例**: 矩阵、光源、时间、颜色
+
+```c
+// CPU 端
+GLint loc = glGetUniformLocation(program, "uLightDir");
+glUniform3f(loc, 1.0, 1.0, 2.0);
+
+// GPU 端 (着色器)
+uniform vec3 uLightDir;
+```
+
+### Varying (易变变量)
+- **来源**: 顶点着色器输出
+- **特点**: GPU 自动在三角形内插值
+- **示例**: 传递法线、颜色到片段着色器
+
+```glsl
+// 顶点着色器
+varying vec3 vNormal;
+void main() {
+    vNormal = gl_NormalMatrix * gl_Normal;  // 输出
+}
+
+// 片段着色器
+varying vec3 vNormal;  // 接收 (已插值)
+void main() {
+    vec3 N = normalize(vNormal);
+}
+```
+
+---
+
+## 坐标变换流程
+
+```
+模型空间 ──→ 世界空间 ──→ 相机空间 ──→ 裁剪空间 ──→ 屏幕空间
+  原始顶点    Model矩阵    View矩阵    Projection    视口变换
+              (旋转平移)   (相机位置)   (透视投影)
+```
+
+### 矩阵设置
+
+```c
+// 投影矩阵 - 定义"镜头"
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+gluPerspective(45.0, w/h, 0.1, 100.0);  // 透视投影
+
+// 模型视图矩阵 - 定义"场景"
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+gluLookAt(0, 0, 3, 0, 0, 0, 0, 1, 0);   // 相机位置
+glRotatef(45, 0, 1, 0);                  // 模型旋转
+```
+
+### 着色器中使用
+
+```glsl
+// 组合矩阵 (固定管线提供)
+gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+
+// 等价于
+gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * gl_Vertex;
+```
+
+---
+
+## 光照计算
+
+### 漫反射 (Lambertian)
+
+```glsl
+vec3 N = normalize(vNormal);     // 表面法线
+vec3 L = normalize(uLightDir);   // 光源方向
+float diff = max(dot(N, L), 0.0); // cos(夹角)
+
+// dot(N, L) = cos(θ)
+// 面向光源: cos ≈ 1 (亮)
+// 背向光源: cos ≈ 0 (暗)
+```
+
+### 法线的作用
+
+```
+        光源
+          ↓
+    N ↗   │
+      \   │
+       \  │
+        \ │
+    ──────●────── 表面
+
+N·L = cos(θ) = 亮度
+```
+
+---
+
+## 着色器编译流程
+
+```c
+// 1. 创建着色器
+GLuint shader = glCreateShader(GL_VERTEX_SHADER);
+
+// 2. 设置源代码
+glShaderSource(shader, 1, &src, NULL);
+
+// 3. 编译
+glCompileShader(shader);
+
+// 4. 创建程序
+GLuint program = glCreateProgram();
+
+// 5. 附加着色器
+glAttachShader(program, vertexShader);
+glAttachShader(program, fragmentShader);
+
+// 6. 链接
+glLinkProgram(program);
+
+// 7. 使用
+glUseProgram(program);
+```
+
+---
+
+## OpenGL 函数命名规则
+
+```
+gl      Vertex    3       f       v
+│         │       │       │       │
+│         │       │       │       └── v = vector (数组指针)
+│         │       │       └── f = float 类型
+│         │       └── 3 = 3个分量 (x,y,z)
+│         └── 功能名
+└── OpenGL 前缀
+```
+
+| 后缀 | 含义 |
+|------|------|
+| `3f` | 3 个 float 参数 |
+| `3fv` | float[3] 数组指针 |
+| `4d` | 4 个 double 参数 |
+| `Matrix4fv` | 4x4 float 矩阵 |
+
+---
+
+## 关键 API 速查
+
+### 着色器相关
+| 函数 | 作用 |
+|------|------|
+| `glCreateShader(type)` | 创建着色器 |
+| `glShaderSource(...)` | 设置源代码 |
+| `glCompileShader(s)` | 编译 |
+| `glCreateProgram()` | 创建程序 |
+| `glAttachShader(p, s)` | 附加着色器 |
+| `glLinkProgram(p)` | 链接 |
+| `glUseProgram(p)` | 启用/禁用 |
+
+### Uniform 相关
+| 函数 | 作用 |
+|------|------|
+| `glGetUniformLocation(p, "name")` | 获取位置 |
+| `glUniform1f(loc, v)` | 设置 float |
+| `glUniform3f(loc, x, y, z)` | 设置 vec3 |
+| `glUniformMatrix4fv(loc, ...)` | 设置 mat4 |
+
+### 矩阵相关
+| 函数 | 作用 |
+|------|------|
+| `glMatrixMode(mode)` | 切换当前矩阵 |
+| `glLoadIdentity()` | 重置为单位矩阵 |
+| `gluPerspective(...)` | 透视投影 |
+| `gluLookAt(...)` | 设置相机 |
+| `glRotatef(angle, x, y, z)` | 旋转 |
+| `glTranslatef(x, y, z)` | 平移 |
+
+---
+
+## 第一步详解: 最简单的着色器
+
+### 什么是着色器？
+
+着色器是运行在 GPU 上的小程序，用于控制顶点和像素的处理。
+
+### 固定管线 vs 可编程管线
+
+**固定管线** (OpenGL 1.x):
+- GPU 内部算法固定，无法修改
+- 只能通过有限的 API 调整效果
+
+**可编程管线** (OpenGL 2.0+):
+- 完全控制顶点和像素的处理逻辑
+- 使用 GLSL 语言编写着色器代码
+
+### 最简单的顶点着色器
+
+```glsl
+void main()
+{
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}
+```
+
+**作用**: 将顶点从模型空间变换到裁剪空间
+
+### 最简单的片段着色器
+
+```glsl
+void main()
+{
+    gl_FragColor = vec4(1.0, 0.5, 0.2, 1.0);  // 橙色
+}
+```
+
+**作用**: 为每个像素设置颜色
+
+### 着色器编译流程
+
+```c
+// 1. 创建着色器对象
+GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+
+// 2. 设置源代码
+glShaderSource(vs, 1, &vertex_src, NULL);
+glShaderSource(fs, 1, &fragment_src, NULL);
+
+// 3. 编译
+glCompileShader(vs);
+glCompileShader(fs);
+
+// 4. 创建程序并链接
+GLuint program = glCreateProgram();
+glAttachShader(program, vs);
+glAttachShader(program, fs);
+glLinkProgram(program);
+
+// 5. 使用
+glUseProgram(program);
+```
+
+### 关键收获
+
+- 理解顶点着色器和片段着色器的分工
+- 掌握着色器编译和链接流程
+- 从固定管线过渡到可编程管线
+
+---
+
+## 第二步详解: Uniform 变量
+
+### 什么是 Uniform？
+
+Uniform 是从 CPU 传递给 GPU 的全局变量，在一次绘制调用中保持不变。
+
+### 用途
+
+- 传递矩阵（MVP）
+- 传递光源参数（位置、颜色）
+- 传递时间、颜色等动态参数
+
+### 使用流程
+
+**1. 在着色器中声明**:
+```glsl
+uniform vec3 uLightDir;  // 光源方向
+uniform vec3 uColor;     // 颜色
+```
+
+**2. 在 CPU 端获取位置**:
+```c
+GLint loc_light = glGetUniformLocation(program, "uLightDir");
+GLint loc_color = glGetUniformLocation(program, "uColor");
+```
+
+**3. 设置值**:
+```c
+glUniform3f(loc_light, 1.0f, 1.0f, 2.0f);
+glUniform3f(loc_color, 1.0f, 0.5f, 0.2f);
+```
+
+### 示例: 动态光照
+
+**片段着色器**:
+```glsl
+uniform vec3 uLightDir;
+varying vec3 vNormal;
+
+void main()
+{
+    vec3 N = normalize(vNormal);
+    vec3 L = normalize(uLightDir);
+    float diff = max(dot(N, L), 0.0);
+    
+    vec3 color = vec3(1.0, 0.5, 0.2);
+    gl_FragColor = vec4(color * diff, 1.0);
+}
+```
+
+**CPU 端**:
+```c
+// 每帧更新光源方向
+float angle = frame * 0.02f;
+float lx = cosf(angle) * 2.0f;
+float lz = sinf(angle) * 2.0f;
+glUniform3f(loc_light, lx, 1.0f, lz);
+```
+
+### Uniform 类型
+
+| 函数 | 类型 |
+|------|------|
+| `glUniform1f(loc, v)` | float |
+| `glUniform3f(loc, x, y, z)` | vec3 |
+| `glUniform4f(loc, x, y, z, w)` | vec4 |
+| `glUniformMatrix4fv(loc, 1, GL_FALSE, m)` | mat4 |
+
+### 关键收获
+
+- 理解 CPU 和 GPU 的数据传递
+- 掌握 Uniform 变量的声明和使用
+- 实现动态光照效果
+
+---
+
+## 第三步详解: 自定义矩阵
+
+### 为什么要自己实现矩阵？
+
+固定管线函数的问题：
+- `gluPerspective` / `gluLookAt` 是固定管线遗留 API
+- 现代 OpenGL (3.0+) 已废弃这些函数
+- 不理解数学原理，无法灵活控制
+
+### 矩阵变换流程
+
+```
+顶点坐标变换:
+  模型空间 ──Model──→ 世界空间 ──View──→ 相机空间 ──Projection──→ 裁剪空间
+  (0,0,0)            (场景中心)        (相机视角)          (屏幕坐标)
+
+MVP 矩阵 = Projection × View × Model
+```
+
+### 1. 透视投影矩阵 (Perspective)
+
+**作用**: 实现"近大远小"的透视效果
+
+**数学公式**:
+```
+f = 1 / tan(fov_y / 2)
+
+┌                                          ┐
+│ f/aspect    0         0            0     │
+│    0        f         0            0     │
+│    0        0   -(f+n)/(f-n)  -2fn/(f-n) │
+│    0        0        -1            0     │
+└                                          ┘
+```
+
+**参数**:
+- `fov_y`: 垂直视野角度 (如 45°)
+- `aspect`: 宽高比 (width / height)
+- `near`: 近裁剪面 (如 0.1)
+- `far`: 远裁剪面 (如 100.0)
+
+**代码实现**:
+```c
+void mat4_perspective(mat4 m, float fov_y, float aspect, float near, float far)
+{
+    float f = 1.0f / tanf(fov_y / 2.0f);
+    
+    memset(m, 0, sizeof(mat4));
+    m[0]  = f / aspect;
+    m[5]  = f;
+    m[10] = -(far + near) / (far - near);
+    m[11] = -1.0f;
+    m[14] = -(2.0f * far * near) / (far - near);
+}
+```
+
+### 2. 视图矩阵 (LookAt)
+
+**作用**: 定义相机的位置和朝向
+
+**数学原理**:
+1. 计算相机坐标系的三个轴
+   - `forward = normalize(center - eye)` (相机朝向)
+   - `right = normalize(forward × up)` (相机右向)
+   - `up' = right × forward` (相机上向)
+
+2. 构建旋转 + 平移矩阵
+
+**代码实现**:
+```c
+void mat4_look_at(mat4 m, float eye[3], float center[3], float up[3])
+{
+    // 计算 forward 向量
+    float f[3] = {
+        center[0] - eye[0],
+        center[1] - eye[1],
+        center[2] - eye[2]
+    };
+    normalize(f);
+    
+    // right = forward × up
+    float r[3] = {
+        f[1] * up[2] - f[2] * up[1],
+        f[2] * up[0] - f[0] * up[2],
+        f[0] * up[1] - f[1] * up[0]
+    };
+    normalize(r);
+    
+    // up' = right × forward
+    float u[3] = {
+        r[1] * f[2] - r[2] * f[1],
+        r[2] * f[0] - r[0] * f[2],
+        r[0] * f[1] - r[1] * f[0]
+    };
+    
+    // 构建矩阵 (旋转 + 平移)
+    m[0] = r[0];  m[4] = r[1];  m[8]  = r[2];
+    m[1] = u[0];  m[5] = u[1];  m[9]  = u[2];
+    m[2] = -f[0]; m[6] = -f[1]; m[10] = -f[2];
+    m[12] = -dot(r, eye);
+    m[13] = -dot(u, eye);
+    m[14] = dot(f, eye);
+}
+```
+
+### 3. 模型矩阵 (Model)
+
+**作用**: 旋转、缩放、平移模型
+
+**旋转矩阵** (绕任意轴):
+```c
+void mat4_rotate(mat4 m, float angle, float x, float y, float z)
+{
+    // 归一化旋转轴
+    float len = sqrtf(x*x + y*y + z*z);
+    x /= len; y /= len; z /= len;
+    
+    float c = cosf(angle);
+    float s = sinf(angle);
+    float t = 1.0f - c;
+    
+    // Rodrigues 旋转公式
+    m[0] = t*x*x + c;     m[4] = t*x*y - s*z;   m[8]  = t*x*z + s*y;
+    m[1] = t*x*y + s*z;   m[5] = t*y*y + c;     m[9]  = t*y*z - s*x;
+    m[2] = t*x*z - s*y;   m[6] = t*y*z + s*x;   m[10] = t*z*z + c;
+}
+```
+
+### 4. 矩阵乘法
+
+**注意**: OpenGL 使用**列主序**存储
+
+```c
+void mat4_multiply(mat4 result, const mat4 a, const mat4 b)
+{
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            result[i*4 + j] = 0;
+            for (int k = 0; k < 4; k++) {
+                result[i*4 + j] += a[k*4 + j] * b[i*4 + k];
+            }
+        }
+    }
+}
+```
+
+### 5. 使用流程
+
+```c
+// 1. 构建各个矩阵
+mat4 proj, view, model;
+mat4_perspective(proj, 45.0f * M_PI / 180.0f, aspect, 0.1f, 100.0f);
+mat4_look_at(view, eye, center, up);
+mat4_rotate(model, angle, 0, 1, 0);
+
+// 2. 组合 MVP
+mat4 modelview, mvp;
+mat4_multiply(modelview, view, model);
+mat4_multiply(mvp, proj, modelview);
+
+// 3. 传递给着色器
+glUniformMatrix4fv(g_loc_mvp, 1, GL_FALSE, mvp);
+```
+
+### 6. 着色器改动
+
+**旧版** (使用固定管线):
+```glsl
+gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+```
+
+**新版** (使用自定义 Uniform):
+```glsl
+uniform mat4 uMVP;
+gl_Position = uMVP * gl_Vertex;
+```
+
+### 对比总结
+
+| 方式 | 优点 | 缺点 |
+|------|------|------|
+| `gluPerspective` | 简单易用 | 固定管线，已废弃 |
+| 自定义矩阵 | 完全控制，现代标准 | 需要理解数学 |
+
+### 关键收获
+
+1. **理解坐标变换**: 模型空间 → 世界空间 → 相机空间 → 裁剪空间
+2. **矩阵数学**: 投影、视图、旋转矩阵的构建
+3. **Uniform 传递**: 通过 `glUniformMatrix4fv` 传递矩阵
+4. **列主序**: OpenGL 矩阵存储方式
+
+---
+
+## 代码文件
+
+- **OpenGL-demo.c** - 主示例代码，渐进式演进
+  - Step 1: 最简单的着色器
+  - Step 2: Uniform 变量
+  - Step 3: 自定义矩阵 ✅
+  - Step 4: VBO 顶点缓冲 ✅ (当前版本)
+  - Step 5: 待实现 - 纹理映射
+
+**为什么在同一个文件中演进？**
+- 避免代码重复和维护困难
+- 保留完整的演进历史（通过注释标记）
+- 更符合实际开发流程：在现有代码上迭代改进
+
+---
+
+## 第四步详解: VBO 顶点缓冲
+
+### 为什么需要 VBO？
+
+**立即模式的问题** (glBegin/glEnd):
+```c
+// 每帧都要执行，740 个顶点 = 2220 次函数调用
+glBegin(GL_TRIANGLES);
+for (int i = 0; i < 740; i++) {
+    glNormal3fv(...);   // CPU → GPU
+    glVertex3fv(...);   // CPU → GPU
+    glVertex3fv(...);   // CPU → GPU
+}
+glEnd();
+```
+
+- ❌ 每帧从 CPU 传输数据到 GPU
+- ❌ 函数调用开销巨大
+- ❌ 数据在 CPU 内存，GPU 访问慢
+- ❌ OpenGL 3.0+ 已废弃
+
+**VBO 的优势**:
+```c
+// 初始化时执行一次
+glGenBuffers(1, &vbo);
+glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+
+// 每帧只需一次调用
+glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+```
+
+- ✅ 数据存储在 GPU 显存
+- ✅ 只上传一次，重复使用
+- ✅ 一次调用绘制所有顶点
+- ✅ 现代 OpenGL 标准
+
+### 实现步骤
+
+#### 1. 数据准备 - 展开面索引
+
+```c
+/* 原始数据: 顶点数组 + 面索引 */
+float vertices[740][3];  // 740 个顶点
+int faces[1476][3];      // 1476 个三角形
+
+/* 展开为顶点数组 (每个三角形 3 个顶点) */
+float positions[1476 * 3 * 3];  // 4428 个顶点位置
+float normals[1476 * 3 * 3];    // 4428 个法线
+
+for (int i = 0; i < face_count; i++) {
+    for (int j = 0; j < 3; j++) {
+        int v_idx = faces[i][j];
+        positions[...] = vertices[v_idx];
+        normals[...] = face_normals[i];  // 共享法线
+    }
+}
+```
+
+#### 2. 创建 VBO - 上传到 GPU
+
+```c
+GLuint vbo_position, vbo_normal;
+
+/* 创建位置 VBO */
+glGenBuffers(1, &vbo_position);
+glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
+glBufferData(GL_ARRAY_BUFFER, 
+             total_vertices * 3 * sizeof(float),
+             positions, 
+             GL_STATIC_DRAW);  // 静态数据，不会修改
+
+/* 创建法线 VBO */
+glGenBuffers(1, &vbo_normal);
+glBindBuffer(GL_ARRAY_BUFFER, vbo_normal);
+glBufferData(GL_ARRAY_BUFFER, 
+             total_vertices * 3 * sizeof(float),
+             normals_data, 
+             GL_STATIC_DRAW);
+```
+
+#### 3. 渲染时使用 VBO
+
+```c
+/* 启用顶点属性数组 */
+glEnableClientState(GL_VERTEX_ARRAY);
+glEnableClientState(GL_NORMAL_ARRAY);
+
+/* 绑定 VBO 并指定数据格式 */
+glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
+glVertexPointer(3, GL_FLOAT, 0, 0);  // 3 个分量，float 类型
+
+glBindBuffer(GL_ARRAY_BUFFER, vbo_normal);
+glNormalPointer(GL_FLOAT, 0, 0);
+
+/* 一次调用绘制所有顶点 */
+glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+
+/* 清理 */
+glDisableClientState(GL_VERTEX_ARRAY);
+glDisableClientState(GL_NORMAL_ARRAY);
+```
+
+### 性能对比
+
+| 方式 | 函数调用/帧 | 数据传输 | 性能 |
+|------|------------|---------|------|
+| glBegin/glEnd | 2220 次 | 每帧传输 | 慢 ⚠️ |
+| VBO | 1 次 | 初始化时传输一次 | 快 ✅ |
+
+**实测效果** (740 顶点模型):
+- 立即模式: ~2220 次 CPU→GPU 调用/帧
+- VBO 模式: ~1 次 GPU 内部调用/帧
+
+### 数据流对比
+
+```
+立即模式:
+  CPU 内存 ──每帧──→ GPU
+  (慢，重复传输)
+
+VBO 模式:
+  CPU 内存 ──初始化──→ GPU 显存
+                        ↓
+                   每帧直接读取
+  (快，零拷贝)
+```
+
+### 关键 API
+
+| 函数 | 作用 |
+|------|------|
+| `glGenBuffers(n, &id)` | 创建 VBO |
+| `glBindBuffer(target, id)` | 绑定 VBO |
+| `glBufferData(target, size, data, usage)` | 上传数据 |
+| `glVertexPointer(size, type, stride, ptr)` | 指定顶点格式 |
+| `glNormalPointer(type, stride, ptr)` | 指定法线格式 |
+| `glDrawArrays(mode, first, count)` | 绘制 |
+
+### 注意事项
+
+1. **数据展开**: 面索引需要展开为顶点数组
+2. **内存管理**: 上传后可以释放 CPU 端临时数组
+3. **GL_STATIC_DRAW**: 数据不会修改，GPU 可优化存储
+4. **兼容性**: 这里用的是 OpenGL 2.1 的 API，现代 OpenGL 3.0+ 用 VAO
+
+### 下一步优化
+
+- 使用 **VAO** (Vertex Array Object) 简化状态管理
+- 使用 **EBO** (Element Buffer Object) 避免顶点重复
+- 使用 **glVertexAttribPointer** 替代固定管线函数
+
+---
+
+## 第五步详解: 纹理映射
+
+### 什么是纹理映射？
+
+**类比**: 给 3D 模型"贴壁纸"
+
+```
+3D 模型 + 2D 图片 = 带纹理的模型
+  茶壶     木纹图     木质茶壶
+```
+
+### 核心概念
+
+#### 1. 纹理 (Texture)
+- 一张存储在 GPU 的图片（像素数组）
+- 可以是照片、程序生成的图案、法线贴图等
+
+#### 2. UV 坐标
+- 每个顶点附带的 2D 坐标 (u, v)
+- 范围 [0, 1]，映射到纹理图片
+- (0, 0) = 左下角，(1, 1) = 右上角
+
+```
+纹理图片:
+  (0,1) ────────── (1,1)
+    │               │
+    │   图片内容     │
+    │               │
+  (0,0) ────────── (1,0)
+```
+
+#### 3. 纹理采样
+- 根据 UV 坐标从纹理中取颜色
+- GPU 自动插值：三角形内部的 UV 会平滑过渡
+
+### 工作流程
+
+```
+1. CPU 准备数据
+   ├─ 纹理图片: 256x256 像素数组
+   └─ UV 坐标: 每个顶点的 (u, v) 值
+
+2. 上传到 GPU
+   ├─ glTexImage2D() → 图片存入显存
+   └─ VBO → UV 坐标存入显存
+
+3. 顶点着色器 (每个顶点)
+   输入: 顶点位置 + UV 坐标
+   输出: UV 坐标传递给片段着色器
+
+4. 光栅化 (GPU 自动)
+   三角形内部的 UV 自动插值
+   例: 顶点 UV 为 (0,0) (1,0) (0,1)
+       中心像素 UV 自动为 (0.33, 0.33)
+
+5. 片段着色器 (每个像素)
+   texture2D(纹理, UV) → 从图片采样颜色
+   例: UV=(0.5, 0.5) → 取图片中心的颜色
+```
+
+### 实现步骤
+
+#### 1. 生成纹理数据
+
+**方式 A: 程序生成** (当前实现)
+```c
+void create_checkerboard_texture()
+{
+    unsigned char data[256 * 256 * 3];
+    int grid_size = 16;
+    
+    for (int y = 0; y < 256; y++) {
+        for (int x = 0; x < 256; x++) {
+            int checker = ((x / grid_size) + (y / grid_size)) % 2;
+            unsigned char color = checker ? 255 : 64;  // 白色或深灰
+            
+            data[(y * 256 + x) * 3 + 0] = color;  // R
+            data[(y * 256 + x) * 3 + 1] = color;  // G
+            data[(y * 256 + x) * 3 + 2] = color;  // B
+        }
+    }
+    
+    // 上传到 GPU
+    glGenTextures(1, &g_texture);
+    glBindTexture(GL_TEXTURE_2D, g_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, 
+                 GL_RGB, GL_UNSIGNED_BYTE, data);
+    
+    // 设置过滤和包裹模式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+}
+```
+
+**优点**:
+- ✅ 无外部文件依赖
+- ✅ 代码自包含
+- ✅ 棋盘格规律明显，便于调试
+
+**方式 B: 加载图片文件** (可选扩展)
+
+需要图像加载库，如 **stb_image.h**:
+
+```c
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+void load_texture_from_file(const char* filename)
+{
+    int width, height, channels;
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 3);
+    
+    if (!data) {
+        fprintf(stderr, "Failed to load texture: %s\n", filename);
+        return;
+    }
+    
+    glGenTextures(1, &g_texture);
+    glBindTexture(GL_TEXTURE_2D, g_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, data);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    stbi_image_free(data);  // 释放 CPU 内存
+}
+```
+
+**使用步骤**:
+1. 下载 `stb_image.h` (单头文件库): https://github.com/nothings/stb
+2. 放到项目目录
+3. 在代码中包含并调用 `load_texture_from_file("texture.png")`
+
+**支持格式**: PNG, JPG, BMP, TGA 等
+
+#### 2. 解析 UV 坐标
+
+修改 `load_obj()` 函数:
+
+```c
+// 读取纹理坐标
+if (sscanf(line, "vt %f %f", &u, &v) == 2) {
+    texcoords[texcoord_count][0] = u;
+    texcoords[texcoord_count][1] = v;
+    texcoord_count++;
+}
+
+// 读取面（包含纹理索引）
+// 格式: f v1/vt1/vn1 v2/vt2/vn2 v3/vt3/vn3
+if (sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d",
+           &v1, &vt1, &vn1, &v2, &vt2, &vn2, &v3, &vt3, &vn3) == 9) {
+    faces[face_count][0] = v1 - 1;
+    faces[face_count][1] = v2 - 1;
+    faces[face_count][2] = v3 - 1;
+    faces_tex[face_count][0] = vt1 - 1;
+    faces_tex[face_count][1] = vt2 - 1;
+    faces_tex[face_count][2] = vt3 - 1;
+    face_count++;
+}
+```
+
+#### 3. 创建纹理坐标 VBO
+
+```c
+void create_vbo()
+{
+    // ... 位置和法线 VBO ...
+    
+    // 展开纹理坐标
+    float* texcoords_data = malloc(total_vertices * 2 * sizeof(float));
+    int idx = 0;
+    for (int i = 0; i < face_count; i++) {
+        for (int j = 0; j < 3; j++) {
+            int vt_idx = faces_tex[i][j];
+            texcoords_data[idx++] = texcoords[vt_idx][0];
+            texcoords_data[idx++] = texcoords[vt_idx][1];
+        }
+    }
+    
+    // 创建 VBO
+    glGenBuffers(1, &g_vbo_texcoord);
+    glBindBuffer(GL_ARRAY_BUFFER, g_vbo_texcoord);
+    glBufferData(GL_ARRAY_BUFFER, 
+                 total_vertices * 2 * sizeof(float),
+                 texcoords_data, 
+                 GL_STATIC_DRAW);
+    
+    free(texcoords_data);
+}
+```
+
+#### 4. 修改着色器
+
+**顶点着色器**:
+```glsl
+varying vec3 vNormal;
+varying vec2 vTexCoord;  // 新增
+
+void main()
+{
+    gl_Position = uMVP * gl_Vertex;
+    vNormal = gl_NormalMatrix * gl_Normal;
+    vTexCoord = gl_MultiTexCoord0.xy;  // 传递 UV 坐标
+}
+```
+
+**片段着色器**:
+```glsl
+varying vec3 vNormal;
+varying vec2 vTexCoord;  // 新增
+uniform sampler2D uTexture;  // 纹理采样器
+
+void main()
+{
+    vec3 N = normalize(vNormal);
+    vec3 L = normalize(uLightDir);
+    float diff = max(dot(N, L), 0.0);
+    
+    vec3 ambient = vec3(0.2);
+    vec3 lighting = ambient + diff * vec3(1.0);
+    
+    vec3 texColor = texture2D(uTexture, vTexCoord).rgb;  // 采样纹理
+    gl_FragColor = vec4(texColor * lighting, 1.0);  // 纹理 × 光照
+}
+```
+
+#### 5. 渲染时绑定纹理
+
+```c
+void render()
+{
+    // ... 其他设置 ...
+    
+    // 绑定纹理
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, g_texture);
+    glUniform1i(g_loc_texture, 0);  // 采样器绑定到纹理单元 0
+    
+    // 启用纹理坐标数组
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, g_vbo_texcoord);
+    glTexCoordPointer(2, GL_FLOAT, 0, 0);
+    
+    // 绘制
+    glDrawArrays(GL_TRIANGLES, 0, total_vertices);
+    
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+}
+```
+
+### 纹理参数详解
+
+```c
+// 过滤模式 (放大/缩小时如何采样)
+GL_NEAREST  // 最近邻，像素化效果
+GL_LINEAR   // 线性插值，平滑过渡
+
+// 包裹模式 (UV 超出 [0,1] 时如何处理)
+GL_REPEAT   // 重复平铺
+GL_CLAMP    // 边缘拉伸
+GL_MIRRORED_REPEAT  // 镜像重复
+```
+
+### 数据流总结
+
+```
+CPU 端:
+  图片数据 ──glTexImage2D──→ GPU 纹理对象
+  UV 坐标  ──VBO──→ GPU 显存
+
+GPU 端:
+  顶点着色器: UV 坐标 ──varying──→ 片段着色器
+  片段着色器: texture2D(纹理, UV) → 颜色
+```
+
+### 关键 API
+
+| 函数 | 作用 |
+|------|------|
+| `glGenTextures(n, &id)` | 创建纹理对象 |
+| `glBindTexture(target, id)` | 绑定纹理 |
+| `glTexImage2D(...)` | 上传图片数据 |
+| `glTexParameteri(...)` | 设置过滤/包裹模式 |
+| `glActiveTexture(unit)` | 激活纹理单元 |
+| `glUniform1i(loc, unit)` | 绑定采样器 |
+
+### 学习建议
+
+**阶段 1: 程序生成纹理** (当前)
+- ✅ 理解 UV 坐标映射原理
+- ✅ 理解纹理采样流程
+- ✅ 无外部依赖，便于调试
+
+**阶段 2: 加载真实图片** (可选)
+- 集成 stb_image.h
+- 加载 PNG/JPG 文件
+- 处理不同尺寸和格式
+
+**阶段 3: 高级纹理** (进阶)
+- 法线贴图 (Normal Mapping)
+- 多重纹理 (Multi-texturing)
+- Mipmap 优化
+
+### 常见问题
+
+**Q: 为什么纹理是黑色的？**
+- 检查是否调用 `glBindTexture()`
+- 检查 UV 坐标是否正确传递
+- 检查采样器 uniform 是否设置
+
+**Q: 纹理拉伸变形？**
+- UV 坐标可能不正确
+- 检查 OBJ 文件的 `vt` 行
+
+**Q: 纹理颠倒？**
+- OpenGL 的 (0,0) 在左下角
+- 图片格式的 (0,0) 通常在左上角
+- 需要翻转 V 坐标: `v = 1.0 - v`
+
+### 性能提示
+
+- 使用 2 的幂次尺寸 (256, 512, 1024) 以支持 Mipmap
+- 压缩纹理格式 (DXT, ETC) 节省显存
+- 纹理图集 (Texture Atlas) 减少状态切换
+
+---
+
+## 扩展: 加载真实图片纹理
+
+### 使用 stb_image.h
+
+**stb_image** 是一个单头文件的图像加载库，支持多种格式。
+
+#### 1. 下载库文件
+
+```bash
+# 下载到项目目录
+wget https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+```
+
+或手动下载: https://github.com/nothings/stb/blob/master/stb_image.h
+
+#### 2. 集成到代码
+
+```c
+// 在一个 .c 文件中定义实现
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+// 其他文件只需包含头文件
+#include "stb_image.h"
+```
+
+#### 3. 加载纹理函数
+
+```c
+GLuint load_texture(const char* filename)
+{
+    int width, height, channels;
+    
+    // 加载图片 (强制转换为 RGB)
+    unsigned char* data = stbi_load(filename, &width, &height, &channels, 3);
+    
+    if (!data) {
+        fprintf(stderr, "Failed to load texture: %s\n", filename);
+        fprintf(stderr, "Reason: %s\n", stbi_failure_reason());
+        return 0;
+    }
+    
+    printf("Loaded texture: %s (%dx%d, %d channels)\n", 
+           filename, width, height, channels);
+    
+    // 创建 OpenGL 纹理
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    // 上传数据
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, data);
+    
+    // 设置过滤模式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    // 设置包裹模式
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    // 释放 CPU 内存
+    stbi_image_free(data);
+    
+    return texture;
+}
+```
+
+#### 4. 使用示例
+
+```c
+// 初始化时
+g_texture = load_texture("assets/wood.png");
+if (g_texture == 0) {
+    fprintf(stderr, "Failed to load texture, using fallback\n");
+    create_checkerboard_texture();  // 回退到程序生成
+}
+
+// 渲染时
+glBindTexture(GL_TEXTURE_2D, g_texture);
+```
+
+#### 5. 支持的格式
+
+- PNG (推荐，支持透明度)
+- JPG/JPEG (压缩格式)
+- BMP (无压缩)
+- TGA
+- GIF (仅第一帧)
+- PSD (Photoshop)
+- HDR (高动态范围)
+
+#### 6. 高级选项
+
+**翻转 Y 轴** (OpenGL 坐标系)
+```c
+stbi_set_flip_vertically_on_load(1);  // 加载时自动翻转
+```
+
+**加载 RGBA** (带透明度)
+```c
+unsigned char* data = stbi_load(filename, &width, &height, &channels, 4);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+             GL_RGBA, GL_UNSIGNED_BYTE, data);
+```
+
+**生成 Mipmap** (多级渐远纹理)
+```c
+glTexImage2D(...);
+glGenerateMipmap(GL_TEXTURE_2D);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+```
+
+#### 7. 错误处理
+
+```c
+if (!data) {
+    const char* reason = stbi_failure_reason();
+    fprintf(stderr, "stbi_load failed: %s\n", reason);
+    
+    // 常见错误:
+    // - "can't fopen": 文件不存在或路径错误
+    // - "unknown image type": 不支持的格式
+    // - "corrupt": 文件损坏
+}
+```
+
+#### 8. 完整示例
+
+```c
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+void init_textures()
+{
+    // 翻转 Y 轴以匹配 OpenGL 坐标系
+    stbi_set_flip_vertically_on_load(1);
+    
+    // 尝试加载外部文件
+    g_texture = load_texture("textures/wood.png");
+    
+    // 如果失败，使用程序生成的纹理
+    if (g_texture == 0) {
+        printf("Using procedural checkerboard texture\n");
+        create_checkerboard_texture();
+    }
+}
+```
+
+### 对比总结
+
+| 方式 | 优点 | 缺点 | 适用场景 |
+|------|------|------|----------|
+| 程序生成 | 无依赖，便于调试 | 效果简单 | 学习、原型 |
+| stb_image | 真实效果，格式丰富 | 需要外部文件 | 实际项目 |
+
+### 资源推荐
+
+**免费纹理网站**:
+- https://polyhaven.com/textures (CC0 许可)
+- https://www.textures.com (需注册)
+- https://ambientcg.com (CC0 许可)
+
+**纹理制作工具**:
+- GIMP (免费)
+- Photoshop
+- Substance Designer (专业)
