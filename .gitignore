@@ -1,7 +1,4 @@
 .venv/
-site/cn/.doctrees/
-site/en/.doctrees/
-site/cn/.buildinfo
-site/en/.buildinfo
+site/
 *.pyc
 __pycache__/
