@@ -11,4 +11,5 @@ interface
 2d-vs-3d-gpu
 gpu-overview
 camera-analysis
+psram-bandwidth
 ```

@@ -12,9 +12,9 @@
 
 | 类型 | 定位 | 形象比喻 | 典型 IP |
 |-----|------|---------|---------|
-| **2D GPU** | 平面图形加速 | 在纸上画画 |STM32 DMA2D, NXP PXP |
-| **2.5D GPU** | 平面图形 + 变形 + 矢量 | 折纸、翻书页 |VeriSilicon GCNanoUltraV, Think Silicon Nema |
-| **3D GPU** | 完整三维渲染 | 搭建乐高模型 |ARM Mali, Vivante GC7000, PowerVR |
+| **2D GPU** | 平面图形加速 | 在纸上画画 |STM32 DMA2D, NXP PXP, PPE1.0(缺少旋转) |
+| **2.5D GPU** | 平面图形 + 变形 + 矢量 | 折纸、翻书页 |VeriSilicon GCNanoUltraV, Think Silicon Nema, PPE2.X |
+| **3D GPU** | 完整三维渲染 | 搭建乐高模型 |ARM Mali, Vivante GC7000 |
 
 ### 1.2 核心区别
 
@@ -24,7 +24,7 @@
 | **光照计算** | 无 | 无 | 有 |
 | **深度缓冲** | 无 | 无 | 完整 |
 | **透明度** | 有 | 有 | 并非标配 |
-| **着色器** | 有 | 有 | 有 |
+| **着色器** | 无 | 无 | 有 |
 
 
 ### 1.3 核心区别一句话总结
@@ -85,10 +85,10 @@
 #### API 与 GPU 类型对应关系
 
 ```
-2D GPU (DMA2D, PXP)
+2D GPU (DMA2D, PXP, PPE1.X)
   └─ 无标准 API，直接寄存器操作或厂商 HAL
 
-2.5D GPU (GC320, GCNanoUltraV)
+2.5D GPU (PPE2.X, GCNanoUltraV)
   ├─ OpenVG 1.1 (矢量图形)
   └─ 私有 2D API (BitBlt, Alpha 混合)
 
@@ -172,45 +172,27 @@
 - 数据流：线性读写
 - 无需复杂调度
 
-### 3.1 2D GPU 工作流程
-
-```{mermaid}
-flowchart LR
-  CPU[CPU] --> REG[命令寄存器/配置]
-  REG --> DMA[DMA 控制器]
-  DMA --> SRC[(源图像/图层 RAM)]
-  SRC --> BLT[2D 引擎]
-  subgraph 像素处理流水线
-    BLT --> CSC[颜色与格式转换]
-    CSC --> SCALE[缩放与旋转]
-    SCALE --> ROP[Alpha 与 ROP 合成]
-    ROP --> CLIP[剪裁]
-    CLIP --> DITHER[抖动]
-  end
-  DITHER --> FB[(帧缓冲 RAM)]
-```
-
-### 3.2 2D GPU 工作流程（PPE1.0）
+### 3.1 2D GPU 工作流程（PPE1.0）
 
 ```{mermaid}
 flowchart LR
   CPU[CPU] --> REG[命令寄存器/配置]
   REG --> DMA[DMA 控制器]
   SRC[(源图像/图层 RAM)] --> DMA
-  DMA --> CSC[颜色与格式转换]
   subgraph 像素处理流水线
-    CSC --> SCALE[缩放与旋转]
+    DMA --> CSC[颜色与格式转换]
+    CSC --> SCALE[缩放与平移]
     CSC --> BLEND[Alpha混合]
     SCALE --> CSC2[颜色与格式转换]
     BLEND --> CSC2[颜色与格式转换]
+    CSC2 --> DMA2[DMA 控制器]
   end
-  CSC2 --> DMA2[DMA 控制器]
   DMA2 --> FB[(帧缓冲 RAM)]
 ```
 
-### 3.3 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV）
+### 3.2 2.5D GPU 工作流程（VeriSilicon GCNanoUltraV/PPE2.X）
 
-#### 3.3.1 矢量图形
+#### 3.2.1 矢量图形
 
 ```{mermaid}
 flowchart LR
@@ -218,15 +200,16 @@ flowchart LR
   CB --> CP[命令解析器]
   CP --> DECODE
   subgraph 路径渲染管线
-    DECODE[路径解码] --> TESS[路径三角化与细分]
+    DECODE[路径解码] --> TESS[路径扁平化]
     TESS --> RASTER[光栅化与覆盖]
     RASTER --> PAINT[涂装]
     PAINT --> AA[抗锯齿]
     AA --> BLEND[混合输出]
   end
-  VBUF[路径与顶点缓冲] --> DECODE
-  TEX[纹理缓存] --> PAINT
+  VBUF[路径缓冲] --> DECODE
+  TEX[简单纹理] --> PAINT
   BLEND --> FB[帧缓冲]
+  FB[帧缓冲] --> BLEND
 ```
 
 
@@ -250,21 +233,9 @@ flowchart LR
 - VeriSilicon Nano 2.5D/3D GPU Introduction Q2 2025: `_static/refs/(Realtek) VeriSilicon Nano 2.5D_3D GPU Introduction - Q2 2025 V1.0 2.pdf`
 - GCNanoUltraV Features/Integration/Registers: `_static/refs/Vivante.GCNanoUltraV.V20x.Hardware.Features-v0.89-D-20230224.pdf`, `_static/refs/Vivante.GCNanoUltraV.Series.V20x.Hardware.Integration-v0.88-D-20230223.pdf`, `_static/refs/Vivante.GCNanoUltraV.V2.0.0.Accessible.Registers-0x00000435-v0.80_rc3z-B-20240513.pdf`
 
-#### 3.3.2 标量图形
+#### 3.2.2 标量图形
 
-```{mermaid}
-flowchart LR
-  CPU[CPU] --> GEO[几何计算]
-  IMG[图像] --> FRAG
-  subgraph 图像渲染管线
-    GEO --> GEOEN[几何运算引擎]
-    GEOEN --> FRAG[片段着色器]
-    FRAG --> PIX[像素合成]
-  end
-  PIX --> FB[帧缓冲]
-```
 
-### 3.4 2.5D GPU 工作流程（PPE2.2）
 
 ```{mermaid}
 flowchart LR
@@ -272,7 +243,7 @@ flowchart LR
   REG --> BRU[区域像素遍历]
   IMG[图源] --> FND
   subgraph 图像渲染管线
-    BRU --> FND[像素索引]
+    BRU --> FND[像素索引(几何引擎)]
     FND --> INT[插值]
     INT --> BLEND[Alpha混合]
   end
@@ -282,7 +253,7 @@ flowchart LR
 
 
 
-### 3.3 3D GPU 工作流程
+### 3.4 3D GPU 工作流程
 
 ```{mermaid}
 flowchart LR
@@ -335,13 +306,13 @@ flowchart LR
 
 | 操作 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
-| **帧缓冲写入** | 27.6 MB/s | 27.6 MB/s | 27.6 MB/s |
-| **源图像读取** | 27.6 MB/s | 55.3 MB/s | 55.3 MB/s |
-| **纹理读取** | - | 55.3 MB/s | 110.6 MB/s |
+| **帧缓冲写入** | 27.6 MB/s | 27.6 MB/s | ? |
+| **源图像读取** | 27.6 MB/s | 55.3 MB/s | ? |
+| **纹理读取** | - | 55.3 MB/s | ? |
 | **深度缓冲读写** | - | - | 55.3 MB/s |
-| **命令/顶点数据** | 0.5 MB/s | 2 MB/s | 10 MB/s |
-| **总带宽需求** | **~60 MB/s** | **~150 MB/s** | **~300 MB/s** |
-| **建议带宽余量** | 100 MB/s | 300 MB/s | 600 MB/s |
+| **命令/顶点数据** | 0.5 MB/s | 2 MB/s | ? |
+| **总带宽需求** | **~100 MB/s** | **~400 MB/s** | **?** |
+| **建议带宽余量** | 200 MB/s | 300 MB/s | 600 MB/s |
 
 ### 4.2 内存容量需求
 
@@ -375,43 +346,18 @@ flowchart LR
 | **总线类型** | AHB/AXI | AXI | AXI |
 | **数据位宽** | 32/64-bit | 64/128-bit | 128/256-bit |
 | **Outstanding** | 2-4 | 4-8 | 8-16 |
-| **QoS 支持** | 可选 | 建议 | 必需 |
-| **MMU 支持** | 可选 | 建议 | 必需 |
+| **QoS 支持** | 可选 | 建议? | 必需? |
+| **MMU 支持** | 可选 | 建议? | 必需? |
 
 ### 5.2 典型总线配置
 
 **2D GPU（低成本方案）**：
-```{mermaid}
-flowchart LR
-  subgraph 系统总线
-    CPU[CPU] -->|AHB| GPU2D[2D GPU]
-    GPU2D -->|AHB| MEM[SRAM PSRAM]
-  end
-```
-备注：PSRAM 容量 1–4 MB
+
 
 **2.5D GPU（中端方案）**：
-```{mermaid}
-flowchart LR
-  subgraph AXI互联
-    CPU[CPU] -->|AXI64| IC[互联 QoS]
-    GPU25D[2.5D GPU] -->|AXI64| IC
-    IC -->|AXI64| DDR[DDR 控制器]
-  end
-```
-备注：内存控制器 DDR3 800
+
 
 **3D GPU（高性能方案）**：
-```{mermaid}
-flowchart LR
-  subgraph AXI互联
-    CPU[CPU] -->|AXI128| IC[互联 QoS MMU]
-    GPU3D[3D GPU] -->|AXI128| IC
-    IC -->|AXI128| DDR[DDR 控制器]
-    IC -->|AXI64| DISP[显示控制器]
-  end
-```
-备注：内存控制器 DDR3 1600
 
 ### 5.3 总线带宽分配建议
 
@@ -430,86 +376,38 @@ flowchart LR
 
 | 模块 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
-| **核心逻辑** | 0.1-0.3 mm² | 0.5-1.0 mm² | 1.5-4.0 mm² |
-| **SRAM 缓存** | 8-32 KB | 32-128 KB | 128-512 KB |
-| **寄存器文件** | 1 KB | 4 KB | 16-64 KB |
-| **总面积** | **0.2-0.5 mm²** | **0.8-1.5 mm²** | **2.0-5.0 mm²** |
+| **总面积** | **? mm²** | **? mm²** | **? mm²** |
 
 ### 6.2 功耗估算（典型工作负载）
 
 | 指标 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
-| **动态功耗** | 20-50 mW | 100-300 mW | 300-1000 mW |
-| **静态功耗** | 1-5 mW | 5-20 mW | 20-100 mW |
-| **峰值功耗** | 80 mW | 500 mW | 2000 mW |
-| **能效比** | 20 Mpix/mW | 5 Mpix/mW | 2 Mpix/mW |
+| **动态功耗** | ? mW | ? mW | ? mW |
+| **静态功耗** | ? mW | ? mW | ? mW |
+| **峰值功耗** | ? mW | ? mW | ? mW |
+| **能效比** | ? Mpix/mW | ? Mpix/mW | ? Mpix/mW |
 
 ### 6.3 时钟域
 
 | 时钟 | 2D GPU | 2.5D GPU | 3D GPU |
 |-----|--------|----------|--------|
 | **核心时钟** | 100-200 MHz | 200-400 MHz | 400-800 MHz |
-| **总线时钟** | 与核心同步 | 独立/同步 | 独立 |
-| **时钟门控** | 简单 | 中等 | 复杂 |
-| **DVFS 支持** | 可选 | 建议 | 必需 |
 
 ---
 
 ## 7. 系统集成考量
 
-### 7.1 IP 集成复杂度
-
-| 集成项 | 2D GPU | 2.5D GPU | 3D GPU |
-|-------|--------|----------|--------|
-| **RTL 复杂度** | 低（10K 门） | 中（100K 门） | 高（500K-2M 门） |
-| **验证周期** | 2-4 周 | 4-8 周 | 8-16 周 |
-| **驱动开发** | 1-2 人月 | 2-4 人月 | 6-12 人月 |
-| **功耗优化** | 简单 | 中等 | 复杂 |
-
-### 7.2 软件栈对比
+### 7.1 软件栈对比
 
 **2D GPU**：
-```
-应用程序
-    ↓
-HAL 驱动（寄存器操作）
-    ↓
-硬件
-```
 
 **2.5D GPU**：
-```
-应用程序
-    ↓
-OpenVG / 私有 API
-    ↓
-用户态驱动（命令生成）
-    ↓
-内核驱动（内存管理、调度）
-    ↓
-硬件
-```
 
 **3D GPU**：
-```
-应用程序
-    ↓
-OpenGL ES / Vulkan
-    ↓
-用户态驱动（着色器编译、命令生成）
-    ↓
-内核驱动（内存管理、调度、电源管理）
-    ↓
-硬件
-```
+
 
 ### 7.3 中断和同步
 
-| 特性 | 2D GPU | 2.5D GPU | 3D GPU |
-|-----|--------|----------|--------|
-| **中断类型** | 完成中断 | 完成 + 错误 | 完成 + 错误 + 页错误 |
-| **同步机制** | 轮询/中断 | Fence | Fence + Semaphore |
-| **超时处理** | 简单复位 | 上下文恢复 | 复杂恢复 |
 
 ---
 
@@ -517,44 +415,10 @@ OpenGL ES / Vulkan
 
 ### 8.1 选型决策树
 
-```
-开始
-  │
-  ▼
-目标功耗 < 100mW？ ──是──→ 选择 2D GPU
-  │
-  否
-  ▼
-需要 3D 模型渲染？ ──是──→ 选择 3D GPU
-  │
-  否
-  ▼
-需要矢量图形/透视变换？ ──是──→ 选择 2.5D GPU
-  │
-  否
-  ▼
-选择 2D GPU
-```
-
 ### 8.2 系统配置建议
-
-| 应用场景 | GPU 类型 | 内存配置 | 总线配置 | 功耗预算 |
-|---------|---------|---------|---------|---------|
-| **IoT 显示** | 2D GPU | 2MB PSRAM | AHB-32 | < 50mW |
-| **智能手表** | 2.5D GPU | 8MB PSRAM | AXI-64 | < 200mW |
-| **车载仪表** | 2.5D GPU | 32MB DDR3 | AXI-64 | < 500mW |
-| **车载中控** | 3D GPU | 256MB DDR3 | AXI-128 | < 2W |
-| **游戏设备** | 3D GPU | 512MB DDR4 | AXI-256 | < 5W |
 
 ### 8.3 风险评估
 
-| 风险项 | 2D GPU | 2.5D GPU | 3D GPU |
-|-------|--------|----------|--------|
-| **IP 授权成本** | 低 | 中 | 高 |
-| **集成风险** | 低 | 中 | 高 |
-| **驱动成熟度** | 高 | 中 | 依赖供应商 |
-| **长期维护** | 简单 | 中等 | 复杂 |
-| **供应商锁定** | 低 | 中 | 高 |
 
 ---
 
