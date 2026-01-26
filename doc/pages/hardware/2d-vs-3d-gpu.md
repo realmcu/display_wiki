@@ -84,19 +84,11 @@
 
 #### API 与 GPU 类型对应关系
 
-```
-2D GPU (DMA2D, PXP, PPE1.X)
-  └─ 无标准 API，直接寄存器操作或厂商 HAL
-
-2.5D GPU (PPE2.X, GCNanoUltraV)
-  ├─ OpenVG 1.1 (矢量图形)
-  └─ 私有 2D API (BitBlt, Alpha 混合)
-
-3D GPU (Mali, PowerVR, GC7000)
-  ├─ OpenGL ES 2.0/3.x (3D 渲染)
-  ├─ Vulkan (低开销 3D API)
-  └─ OpenCL 1.2/2.0 (通用计算)
-```
+| GPU 类型 | 典型 IP | 支持的 API |
+|---------|---------|-----------|
+| **2D GPU** | DMA2D, PXP, PPE1.X | 无标准 API，直接寄存器操作或厂商 HAL |
+| **2.5D GPU** | PPE2.X, GCNanoUltraV | OpenVG 1.1 (矢量图形)<br>私有 2D API (BitBlt, Alpha 混合) |
+| **3D GPU** | Mali, PowerVR, GC7000 | OpenGL ES 2.0/3.x (3D 渲染)<br>Vulkan (低开销 3D API)<br>OpenCL 1.2/2.0 (通用计算) |
 ---
 
 ## 2. 客户需求
@@ -418,9 +410,6 @@ flowchart LR
 ### 8.2 系统配置建议
 
 ### 8.3 风险评估
-
-
----
 
 ## 9. 典型 IP 对比
 
