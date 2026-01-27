@@ -9,7 +9,7 @@
 
 ## Overview
 
-## General Description
+### General Description
 
 Display Controller通过内部自带的DMA从RAM搬运至内部的handler FIFO。通过pixel converter将image转换为对应的pixel format，选择不同的interface将pixel输出。目前可以支持的interface如下：
 
@@ -1979,7 +1979,7 @@ disable display controller，寄存器INTERFACE_SELECT bit[0]；
 
 # MIPI eDPI Output
 
-## General Description
+### General Description
 
 DMA master 从RAM 读取Pixel图像（这部分图像是已经经过GPU处理后的图像），做RGB转换后输出符合eDPI标准的波形给DW MIPI DSI Host。
 
