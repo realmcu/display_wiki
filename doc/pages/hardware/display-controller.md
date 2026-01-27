@@ -36,7 +36,7 @@ APB interface for control register R/W access，DMA read使用AXI master read po
 
 **图 1-1：Display Controller Block图**
 
-![图 1-1]( images/display-controller/image_1-1.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_1.emf) -->
 
 
 ### RESET补充描述
@@ -60,7 +60,7 @@ APB interface for control register R/W access，DMA read使用AXI master read po
 
 **图 1-2：Display Controller Tx 数据流向**
 
-![图 1-2]( images/display-controller/image_1-2.png)
+![图 1-2](images/display-controller/image_2.png)
 
 
 ## 数据流向-Rx（auto）
@@ -70,7 +70,7 @@ APB interface for control register R/W access，DMA read使用AXI master read po
 
 **图 1-3：Display Controller DBI-B Rx 数据流向**
 
-![图 1-3]( images/display-controller/image_1-3.png)
+![图 1-3](images/display-controller/image_3.png)
 
 
 当使用SPIC user mode Rx时，Received data直接存储在SPIC interface 的Rx FIFO中，而不会返回handler FIFO。user需要将AXI mux切换为FW mode，通过APB interface直接读取SPIC Rx FIFO中的值。
@@ -169,19 +169,19 @@ handler寄存器中的Interface_select可以选择当前运行在哪种interface
 
 **图 3-1：8bits & 16bits swap**
 
-![图 3-1]( images/display-controller/image_3-1.png)
+![图 3-1](images/display-controller/image_4.png)
 
 
 
 **图 3-2：16bits swap**
 
-![图 3-2]( images/display-controller/image_3-2.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_5.emf) -->
 
 
 
 **图 3-3：8bits swap**
 
-![图 3-3]( images/display-controller/image_3-3.png)
+![图 3-3](images/display-controller/image_6.png)
 
 
 ## bit swap的作用
@@ -193,7 +193,7 @@ AGRB8888:
 
 **图 3-4：ARGB888 存储方式**
 
-![图 3-4]( images/display-controller/image_3-4.png)
+![图 3-4](images/display-controller/image_7.png)
 
 
 BGR565:
@@ -203,7 +203,7 @@ BGR565:
 
 **图 3-5：BGR565 存储方式**
 
-![图 3-5]( images/display-controller/image_3-5.png)
+![图 3-5](images/display-controller/image_8.png)
 
 
 RGB565:
@@ -213,7 +213,7 @@ RGB565:
 
 **图 3-6：RGB565 存储方式**
 
-![图 3-6]( images/display-controller/image_3-6.png)
+![图 3-6](images/display-controller/image_9.png)
 
 
 RGB888 Stream:
@@ -223,7 +223,7 @@ RGB888 Stream:
 
 **图 3-7：RGB888 Stream 存储方式**
 
-![图 3-7]( images/display-controller/image_3-7.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_10.emf) -->
 
 
 ## RGB converter
@@ -247,7 +247,7 @@ RGB888 Stream:
 
 **图 3-8：32bits ARGB8888 input Format**
 
-![图 3-8]( images/display-controller/image_3-8.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_11.emf) -->
 
 
 
@@ -256,14 +256,14 @@ RGB888 Stream:
 
 **图 3-10：32bits BGR565 define(2 pixels) input format**
 
-![图 3-10]( images/display-controller/image_3-10.png)
+![图 3-10](images/display-controller/image_13.png)
 
 
 RGB888 stream按如下方式处理，以启动后FIFO收到的第一笔32bit data为起始。按3 bytes做解析，每3个byte组合成一个RGB888 pixel。输入的data数量必须是3*32bits的整数倍。
 
 **图 3-11：RGB888 Stream define(4 pixels) input format（332bits）**
 
-![图 3-11]( images/display-controller/image_3-11.png)
+![图 3-11](images/display-controller/image_14.png)
 
 
 ### output format
@@ -273,13 +273,13 @@ RGB888 stream按如下方式处理，以启动后FIFO收到的第一笔32bit dat
 
 **图 3-12：RGB565 output(2 bytes)**
 
-![图 3-12]( images/display-controller/image_3-12.png)
+![图 3-12](images/display-controller/image_15.png)
 
 
 
 **图 3-13：RGB888 output(3 bytes)**
 
-![图 3-13]( images/display-controller/image_3-13.png)
+![图 3-13](images/display-controller/image_16.png)
 
 
 支援的转换的RGB Format如表 3-1 RGB Format 转换
@@ -294,7 +294,7 @@ RGB888 stream按如下方式处理，以启动后FIFO收到的第一笔32bit dat
 
 **图 3-14：RGB565 convert to RGB888**
 
-![图 3-14]( images/display-controller/image_3-14.png)
+![图 3-14](images/display-controller/image_17.png)
 
 
 ### Color Map（eDPI）
@@ -323,7 +323,7 @@ V-Blanking（Display Controller支持这种）
 
 **图 4-1：tear effect output of V-Blanking**
 
-![图 4-1]( images/display-controller/image_4-1.png)
+![图 4-1](images/display-controller/image_18.png)
 
 
 V-Blanking and H-Blanking
@@ -335,7 +335,7 @@ V-Blanking and H-Blanking
 
 **图 4-2：tear output of V-Blanking and H-Blanking**
 
-![图 4-2]( images/display-controller/image_4-2.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_19.emf) -->
 
 
 Rearching line N
@@ -345,7 +345,7 @@ Rearching line N
 
 **图 4-3：tear output of rearching line N**
 
-![图 4-3]( images/display-controller/image_4-3.png)
+![图 4-3](images/display-controller/image_20.png)
 
 
 ## tear output接收到后host的行为
@@ -367,7 +367,7 @@ https://blog.csdn.net/hexiaolong2009/article/details/79319512
 
 **图 4-4：Host action when host is faster than LCD self-refreshing**
 
-![图 4-4]( images/display-controller/image_4-4.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_21.emf) -->
 
 
 注：上述从TE的上升沿到host开始写的时间间隔可以认为是传输延迟，或者是等写指针复位的时间，可以通过register来控制长度。
@@ -387,7 +387,7 @@ https://blog.csdn.net/hexiaolong2009/article/details/79319512
 
 **图 4-5：Host action when host is slower than LCD self-refreshing**
 
-![图 4-5]( images/display-controller/image_4-5.png)
+![图 4-5](images/display-controller/image_22.png)
 
 
 结论：
@@ -570,7 +570,7 @@ Display Controller中Handler FIFO的宽度为32bit，深度为128，则FIFO Size
 
 **图 7-1：DMA 初始默认设置**
 
-![图 7-1]( images/display-controller/image_7-1.png)
+![图 7-1](images/display-controller/image_23.png)
 
 
 Number of master interfaces 	：DMAC_NUM_MASTER_INT =1
@@ -587,7 +587,7 @@ SSTAT与DSTAT解释
 
 **图 7-2：DMA channel0 SSTAT&DSTAT**
 
-![图 7-2]( images/display-controller/image_7-2.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_24.emf) -->
 
 
 SSTATAR与DSTATAR解释
@@ -595,7 +595,7 @@ SSTATAR与DSTATAR解释
 
 **图 7-3：DMA channel0 SSTATAR&DSTATAR**
 
-![图 7-3]( images/display-controller/image_7-3.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_25.emf) -->
 
 
 SGR和DSR解释
@@ -603,7 +603,7 @@ SGR和DSR解释
 
 **图 7-4：DMA channel0 SGR&DSR**
 
-![图 7-4]( images/display-controller/image_7-4.png)
+![图 7-4](images/display-controller/image_26.png)
 
 
 不支持gather和scatter。因此SGR0和DSR0不用关心。
@@ -653,7 +653,7 @@ IntErr-Error Interrupt（error response from OCP）（此bus传输错误通常�
 
 **图 7-5：DMA channel0 Interrupt 相关**
 
-![图 7-5]( images/display-controller/image_7-5.png)
+![图 7-5](images/display-controller/image_27.png)
 
 
 ### DMA Miscellaneous 寄存器
@@ -661,7 +661,7 @@ IntErr-Error Interrupt（error response from OCP）（此bus传输错误通常�
 
 **图 7-6：DMA Miscellaneous 相关**
 
-![图 7-6]( images/display-controller/image_7-6.png)
+![图 7-6](images/display-controller/image_28.png)
 
 
 DmaCfgReg：enable or disable RTK DMAC
@@ -671,7 +671,7 @@ DmaCfgReg：enable or disable RTK DMAC
 
 **图 7-7：DMA DmaCfgReg 相关**
 
-![图 7-7]( images/display-controller/image_7-7.png)
+![图 7-7](images/display-controller/image_29.png)
 
 
 
@@ -682,7 +682,7 @@ ChEnReg：enable or disable channel0；enable or disable channel 0 write。
 
 **图 7-8：DMA ChEnReg 相关**
 
-![图 7-8]( images/display-controller/image_7-8.png)
+![图 7-8](images/display-controller/image_30.png)
 
 
 DmaIdReg：可以读回DMAC的DMAC_ID_NUM，即release data，不需要设置
@@ -694,7 +694,7 @@ DmaOsNum：表示RTK_DMAC Outstanding Number Register，这个是AXI4中的特�
 
 **图 7-9：DMA Configuration Parameter 相关**
 
-![图 7-9]( images/display-controller/image_7-9.png)
+![图 7-9](images/display-controller/image_31.png)
 
 
 ## initial flow（配置寄存器）
@@ -708,7 +708,7 @@ wiki上设置的TT_FC为100，即
 
 **图 7-10：DMA CTRL0 TT_FC 相关**
 
-![图 7-10]( images/display-controller/image_7-10.png)
+![图 7-10](images/display-controller/image_32.png)
 
 
 但是根据Display Controller架构的理解，DMA明明是将数据从GPU后续的data RAM中搬运至Display Controller的FIFO中，且Display Controller为作为流控。因此看起来应该选择110。但是实际上，RDC将此处定死，必须选定为100。
@@ -830,7 +830,7 @@ polling CFG0[0]直到其变为1，说明DMA已经处于inactive阶段
 
 **图 7-11：DMA Suspend-Cancel流程**
 
-![图 7-11]( images/display-controller/image_7-11.png)
+![图 7-11](images/display-controller/image_33.png)
 
 
 DMA传输如下图：
@@ -838,7 +838,7 @@ DMA传输如下图：
 
 **图 7-12：Auto-Reloaded Address for Source and Destination**
 
-![图 7-12]( images/display-controller/image_7-12.png)
+![图 7-12](images/display-controller/image_34.png)
 
 
 #### Multi-Block with Contiguous Source Address and Auto-Reloaded Destination Address
@@ -876,7 +876,7 @@ DMA传输如下图：
 
 **图 7-13：Contiguous Source Address and Auto-Reloaded Destination Address**
 
-![图 7-13]( images/display-controller/image_7-13.png)
+![图 7-13](images/display-controller/image_35.png)
 
 
 #### Multi-Block with Linked List Source Address and Destination Address
@@ -961,7 +961,7 @@ DMA传输如下图：
 
 **图 7-14：Linked Address for Source and Destination**
 
-![图 7-14]( images/display-controller/image_7-14.png)
+![图 7-14](images/display-controller/image_36.png)
 
 
 ## Flow Controller for RTK DMAC
@@ -973,7 +973,7 @@ RTK DMAC的handshake signal如下所示，其余为AXI interface的bus signal和
 
 **图 7-15：DMA hardware handshake signals**
 
-![图 7-15]( images/display-controller/image_7-15.png)
+![图 7-15](images/display-controller/image_37.png)
 
 
 运行流程如下：
@@ -1013,7 +1013,7 @@ DMA会先将link list中的register（accessed by DMA）read back，然后根据
 
 **图 8-1：DMA link list module flow**
 
-![图 8-1]( images/display-controller/image_8-1.png)
+![图 8-1](images/display-controller/image_38.png)
 
 
 ## Register
@@ -1023,7 +1023,7 @@ DMA会先将link list中的register（accessed by DMA）read back，然后根据
 
 **图 8-2：DMA link list module group1**
 
-![图 8-2]( images/display-controller/image_8-2.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_39.emf) -->
 
 
 如下register.用于存放Group2的link list。
@@ -1031,7 +1031,7 @@ DMA会先将link list中的register（accessed by DMA）read back，然后根据
 
 **图 8-3：DMA link list module group2**
 
-![图 8-3]( images/display-controller/image_8-3.png)
+![图 8-3](images/display-controller/image_40.png)
 
 
 如下为control register
@@ -1039,7 +1039,7 @@ DMA会先将link list中的register（accessed by DMA）read back，然后根据
 
 **图 8-4：DMA link list module control register**
 
-![图 8-4]( images/display-controller/image_8-4.png)
+![图 8-4](images/display-controller/image_41.png)
 
 
 如下为DMA group1和group2 offset增量的设置寄存器
@@ -1047,7 +1047,7 @@ DMA会先将link list中的register（accessed by DMA）read back，然后根据
 
 **图 8-5：DMA link list module offset**
 
-![图 8-5]( images/display-controller/image_8-5.png)
+![图 8-5](images/display-controller/image_42.png)
 
 
 如上寄存器是通过CPU来设置的，然后通过内部的硬件，产生用于DMA 的link list，即下面标注的寄存器中accessed by DMA的部分。
@@ -1104,7 +1104,7 @@ block cnt clear
 
 **图 9-1：MIPI DBI-C interface**
 
-![图 9-1]( images/display-controller/image_9-1.png)
+![图 9-1](images/display-controller/image_43.png)
 
 
 ## Overview
@@ -1134,7 +1134,7 @@ SPIC 中Tx FIFO depth为64（64*8bit）；Rx FIFO depth为8（8*8bit）。Tx FIF
 
 **图 9-2：SPIC interface**
 
-![图 9-2]( images/display-controller/image_9-2.png)
+![图 9-2](images/display-controller/image_44.png)
 
 
 SPIC Module的全部interface如上图所示，其中与LCD Device相连的signal是我们所关心的，其余的interface均在IP内部连接，用于控制或调试。
@@ -1149,7 +1149,7 @@ SPIC Module的全部interface如上图所示，其中与LCD Device相连的signa
 
 **图 9-3：Function Description of SPIC setting**
 
-![图 9-3]( images/display-controller/image_9-3.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_45.emf) -->
 
 
 SPIC内部设置运行在user mode。
@@ -1169,7 +1169,7 @@ User mode下的transmit mode，SPIC从Tx FIFO中取出数据，按照USER_CMD_LE
 
 **图 9-4：SPIC Transmit Mode**
 
-![图 9-4]( images/display-controller/image_9-4.png)
+![图 9-4](images/display-controller/image_46.png)
 
 
 Tx mode下要发送的data的总量，可以在寄存器TX_NDF中设置。发送的data数量等于TX_NDF时触发TFSI（transfer stop interrupt）。
@@ -1183,7 +1183,7 @@ User mode下的Receive mode，SPIC从Tx FIFO中取出数据，按照USER_CMD_LEN
 
 **图 9-5：SPIC Receive Mode**
 
-![图 9-5]( images/display-controller/image_9-5.png)
+![图 9-5](images/display-controller/image_47.png)
 
 
 Rx mode下要接收的data的总量，可以在寄存器RX_NDF中设置。接收的data数量等于RX_NDF时触发TFSI（transfer stop interrupt）。
@@ -1203,7 +1203,7 @@ command phase、address phase和dummy cycle的长度可以在对应的register�
 
 **图 9-6：SPIC User Mode Addr&CMD Length**
 
-![图 9-6]( images/display-controller/image_9-6.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_48.emf) -->
 
 
 command phase、address phase和data phase的所占用的channel的数量，可以在如下register中设置：
@@ -1211,7 +1211,7 @@ command phase、address phase和data phase的所占用的channel的数量，可�
 
 **图 9-7：SPIC User Mode Addr、CMD、Data channel**
 
-![图 9-7]( images/display-controller/image_9-7.png)
+![图 9-7](images/display-controller/image_49.png)
 
 
 在FW mode下可以在USER_LENGTH任意设置command phase、address phase长度，SPIC会在DR中取出对应数量的数据解析为command和address，并在对应的phase发送。FW mode下可以在TX_NDF和RX_NDF中设置Tx和Rx下data的数量。
@@ -1293,19 +1293,19 @@ MIPI DBI type C write sequence如下图，Tx Data format为9bits，command byte�
 
 **图 9-8：MIPI DBI type C option1 Write 1**
 
-![图 9-8]( images/display-controller/image_9-8.png)
+![图 9-8](images/display-controller/image_50.png)
 
 
 
 **图 9-9：MIPI DBI type C option1 Write 2**
 
-![图 9-9]( images/display-controller/image_9-9.png)
+![图 9-9](images/display-controller/image_51.png)
 
 
 
 **图 9-10：MIPI DBI type C option1 RGB565**
 
-![图 9-10]( images/display-controller/image_9-10.png)
+![图 9-10](images/display-controller/image_52.png)
 
 
 MIPI DBI type C read sequence如下图，Tx Data format为9bits，command byte前加bit0；read back的data 为8 bits。
@@ -1313,7 +1313,7 @@ MIPI DBI type C read sequence如下图，Tx Data format为9bits，command byte�
 
 **图 9-11：MIPI DBI type C option1 Read 1**
 
-![图 9-11]( images/display-controller/image_9-11.png)
+![图 9-11](images/display-controller/image_53.png)
 
 
 可选择在图示位置是否加dummy cycle，并可设定dummy cycle数。
@@ -1321,7 +1321,7 @@ MIPI DBI type C read sequence如下图，Tx Data format为9bits，command byte�
 
 **图 9-12：MIPI DBI type C option1 Read 2**
 
-![图 9-12]( images/display-controller/image_9-12.png)
+![图 9-12](images/display-controller/image_54.png)
 
 
 ### MIPI DBI type C option3（支持）
@@ -1347,13 +1347,13 @@ D/CX在command phase下为0，在其余的phase下均为1。且D/CX signal保持
 
 **图 9-13：MIPI DBI type C option3 Write**
 
-![图 9-13]( images/display-controller/image_9-13.png)
+![图 9-13](images/display-controller/image_55.png)
 
 
 
 **图 9-14：MIPI DBI type C option3 RGB565**
 
-![图 9-14]( images/display-controller/image_9-14.png)
+![图 9-14](images/display-controller/image_56.png)
 
 
 DBI Type C Read waveform如下图, write command时，DCX=low 表示当前发送的是command。Read data时，DCX pin需变为High。Write command和Read Data之间可加dummy cycle，并可设定dummy cycle数。
@@ -1361,7 +1361,7 @@ DBI Type C Read waveform如下图, write command时，DCX=low 表示当前发送
 
 **图 9-15：MIPI DBI type C option3 Read**
 
-![图 9-15]( images/display-controller/image_9-15.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_57.emf) -->
 
 
 ### Pixel Dual SPI option1（暂不支持）
@@ -1371,13 +1371,13 @@ Pixel Dual SPI option1如下所示，使用9bits data frame，发送command byte
 
 **图 9-16：RGB565 Pixel Dual SPI option1**
 
-![图 9-16]( images/display-controller/image_9-16.png)
+![图 9-16](images/display-controller/image_58.png)
 
 
 
 **图 9-17：RGB888 Pixel Dual SPI option1**
 
-![图 9-17]( images/display-controller/image_9-17.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_59.emf) -->
 
 
 ### Pixel Dual SPI option2（暂不支持）
@@ -1387,13 +1387,13 @@ Pixel Dual SPI option2如下图所示，区别于option1，每发9bits RGB data�
 
 **图 9-18：RGB565 Pixel Dual SPI option2**
 
-![图 9-18]( images/display-controller/image_9-18.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_60.emf) -->
 
 
 
 **图 9-19：RGB888 Pixel Dual SPI option2**
 
-![图 9-19]( images/display-controller/image_9-19.png)
+![图 9-19](images/display-controller/image_61.png)
 
 
 ### Pixel QSPI SDR（支持）
@@ -1415,7 +1415,7 @@ USER_ADDR_LENGTH=0x3；		ADDR固定为3byte
 
 **图 9-20：Pixel QSPI RGB888 option1**
 
-![图 9-20]( images/display-controller/image_9-20.png)
+![图 9-20](images/display-controller/image_62.png)
 
 
 CMD_CH 	=	0x0；			CMD single channel
@@ -1433,7 +1433,7 @@ USER_ADDR_LENGTH=0x3；		ADDR固定为3byte
 
 **图 9-21：Pixel QSPI RGB888 option2**
 
-![图 9-21]( images/display-controller/image_9-21.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_63.emf) -->
 
 
 ### Pixel QSPI DDR（支持）
@@ -1469,7 +1469,7 @@ Ramless SPI interface与video mode的对应关系如下所示：
 
 **图 9-22：Ramless QSPI与DPI waveform对比**
 
-![图 9-22]( images/display-controller/image_9-22.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_64.emf) -->
 
 
 可以看出，DPI interface中的VSYNC区域中的每条line被RAMLESS SPI的“CMD（0xDE）+ADDR（0x006100）”代替，VBP区域中的每条line被“CMD（0xDE）+ADDR（0x006000）”代替，VACTIVE区域内的pixel data被“CMD（0xDE）+ADDR（0x006000）+DATA（SPI）”代替。
@@ -1479,7 +1479,7 @@ RAMLESS SPI刷新一整帧的过程如下所示：
 
 **图 9-23：Ramless QSPI 发送帧的流程**
 
-![图 9-23]( images/display-controller/image_9-23.png)
+![图 9-23](images/display-controller/image_65.png)
 
 
 除了将原本DPI interface中的VSYNC、VBP和VFP阶段用“CMD+ADDR”的形式代替，将VACTIVE阶段用“CMD+ADDR+pixel”的形式代替外，在line与line之间和frame与frame之间都需要设定对应的delay时间，这段时间内CS必须处于high。且ACTIVE的ADDR和pixel之间必须含有对应的dummy CMD。
@@ -1539,37 +1539,37 @@ Ramless支持的color format：
 
 **图 9-24：Ramless QSPI RGB888 Color format**
 
-![图 9-24]( images/display-controller/image_9-24.png)
+![图 9-24](images/display-controller/image_66.png)
 
 
 
 **图 9-25：Ramless QSPI RGB565 Color format**
 
-![图 9-25]( images/display-controller/image_9-25.png)
+![图 9-25](images/display-controller/image_67.png)
 
 
 
 **图 9-26：Ramless Dual-SPI RGB888 Color format**
 
-![图 9-26]( images/display-controller/image_9-26.png)
+![图 9-26](images/display-controller/image_68.png)
 
 
 
 **图 9-27：Ramless Dual-SPI RGB565 Color format**
 
-![图 9-27]( images/display-controller/image_9-27.png)
+![图 9-27](images/display-controller/image_69.png)
 
 
 
 **图 9-28：Ramless SPI RGB888 Color format**
 
-![图 9-28]( images/display-controller/image_9-28.png)
+![图 9-28](images/display-controller/image_70.png)
 
 
 
 **图 9-29：Ramless SPI RGB565 Color format**
 
-![图 9-29]( images/display-controller/image_9-29.png)
+![图 9-29](images/display-controller/image_71.png)
 
 
 ## SPIC Initial Flow
@@ -1676,7 +1676,7 @@ CTRLR2[3]设置为0，表示Rx read FIFO时为INCR
 
 **图 10-1：MIPI DBI-B interface**
 
-![图 10-1]( images/display-controller/image_10-1.png)
+![图 10-1](images/display-controller/image_72.png)
 
 
 ## feature
@@ -1696,7 +1696,7 @@ MCU并行接口，8bit位宽
 
 **图 10-2：MIPI DBI-B State Machine**
 
-![图 10-2]( images/display-controller/image_10-2.png)
+![图 10-2](images/display-controller/image_73.png)
 
 
 IDLE:
@@ -1736,7 +1736,7 @@ DBI-B支持以下四种output方式：
 
 **图 10-3：DBI-B interface write sequence**
 
-![图 10-3]( images/display-controller/image_10-3.png)
+![图 10-3](images/display-controller/image_74.png)
 
 
 2、Auto Read
@@ -1746,7 +1746,7 @@ DBI-B支持以下四种output方式：
 
 **图 10-4：DBI-B interface read sequence**
 
-![图 10-4]( images/display-controller/image_10-4.png)
+![图 10-4](images/display-controller/image_75.png)
 
 
 3、tear trigger auto write
@@ -1766,13 +1766,13 @@ DBI-B支持以下四种output方式：
 
 **图 10-5：DBI-B RGB565 color map**
 
-![图 10-5]( images/display-controller/image_10-5.png)
+![图 10-5](images/display-controller/image_76.png)
 
 
 
 **图 10-6：DBI-B RGB888 color map**
 
-![图 10-6]( images/display-controller/image_10-6.png)
+![图 10-6](images/display-controller/image_77.png)
 
 
 BRG565与RGB565的波形基本一致，只需要将对应的R\G\B的位置调换即可；
@@ -1986,7 +1986,7 @@ DMA master 从RAM 读取Pixel图像（这部分图像是已经经过GPU处理后
 
 **图 11-1：eDPI interface and block**
 
-![图 11-1]( images/display-controller/image_11-1.png)
+![图 11-1](images/display-controller/image_78.png)
 
 
 ## Feature List
@@ -2008,7 +2008,7 @@ Output data width 16/24bits
 
 **图 11-2：eDPI interface**
 
-![图 11-2]( images/display-controller/image_11-2.png)
+![图 11-2](images/display-controller/image_79.png)
 
 
 
@@ -2020,7 +2020,7 @@ Output data width 16/24bits
 
 **图 11-3：eDPI waveform description**
 
-![图 11-3]( images/display-controller/image_11-3.png)
+![图 11-3](images/display-controller/image_80.png)
 
 
 ### 举例说明（4）
@@ -2037,7 +2037,7 @@ Output data width 16/24bits
 
 **图 11-4：eDPI Video mode 4行4列LCD屏幕各信号波形图**
 
-![图 11-4]( images/display-controller/image_11-4.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_81.emf) -->
 
 
 对上图中圆圈内的部分扩大后显示如下所示：
@@ -2045,7 +2045,7 @@ Output data width 16/24bits
 
 **图 11-5：eDPI Video mode LCD屏幕每一行Pixel波形图**
 
-![图 11-5]( images/display-controller/image_11-5.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_82.emf) -->
 
 
 ### dpishutdn
@@ -2059,7 +2059,7 @@ dpishutdn信号用于打开或关闭显示模组。（以下示例以shutdn信�
 
 **图 11-6：eDPI Video mode dpishutdn and power off sequence**
 
-![图 11-6]( images/display-controller/image_11-6.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_83.emf) -->
 
 
 硬件设计为，当检测到Type4 架构下的shutdn信号从active变为inactive时（即从power off变为power on时），预先向LCD屏幕刷12帧黑（白）屏，黑（白）屏的pixel数据由硬件自行创造，而不通过DMA来获取。
@@ -2082,7 +2082,7 @@ dpishutdn信号用于打开或关闭显示模组。（以下示例以shutdn信�
 
 **图 11-7：eDPI Video mode dpishutdn and power on sequence**
 
-![图 11-7]( images/display-controller/image_11-7.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_84.emf) -->
 
 
 硬件设计为，当检测到Type4 架构下的shutdn信号从inactive变为active时（即从power on变为power off时），先将本帧数据刷完，然后再向LCD屏幕刷4帧黑（白）屏，黑（白）屏的pixel数据由硬件自行创造，而不通过DMA来获取。
@@ -2121,7 +2121,7 @@ dpicolorm信号用于改变显示颜色的数量(以下示例以dpicolorm信号�
 
 **图 11-8： eDPI Video mode from full-color to 8-color mode**
 
-![图 11-8]( images/display-controller/image_11-8.png)
+![图 11-8](images/display-controller/image_85.png)
 
 
 从8色模式转为全色模式
@@ -2129,7 +2129,7 @@ dpicolorm信号用于改变显示颜色的数量(以下示例以dpicolorm信号�
 
 **图 11-9：eDPI Video mode from 8-color to full-color mode**
 
-![图 11-9]( images/display-controller/image_11-9.png)
+![图 11-9](images/display-controller/image_86.png)
 
 
 注意：
@@ -2146,7 +2146,7 @@ DPI支持动态修改DPI configuration而不影响当前正在传输的Frame，�
 
 **图 11-10：eDPI下通过software来更新configuration**
 
-![图 11-10]( images/display-controller/image_11-10.png)
+![图 11-10](images/display-controller/image_87.png)
 
 
 如果无法通过APB来同步DPI Configuration的修改请求，则可以使用外部信号dpiupdatecfg来发起DPI Configuration的修改请求。在dpiupdatecfg上升沿时，发起修改请求request。
@@ -2158,7 +2158,7 @@ Display Controller运行在eDPI interface下时，会以dpiclk为clock去latch R
 
 **图 11-11：eDPI下通过hardware来更新configuration**
 
-![图 11-11]( images/display-controller/image_11-11.png)
+![图 11-11](images/display-controller/image_88.png)
 
 
 注：DPI configuration的update request可以在frame的任何时候发起，但是DWC_MIPI_DSI_HOST会等到当前frame结束后才会更新configuration。然而，应当避免在frame的第一行时就发起update request。
@@ -2170,7 +2170,7 @@ eDPI interface运行在video mode时，可以选择以HS或LP状态发送command
 
 **图 11-12：BLLP of one Frame**
 
-![图 11-12]( images/display-controller/image_11-12.png)
+![图 11-12](images/display-controller/image_89.png)
 
 
 在以上的BLLP阶段传送command的时候，由于横向总时间HLINE是恒定的，所以不会产生Display Controller和DSI Host Controller的速度不匹配。但是除了在BLLP阶段发送command之外，对于一些比较大的command，无法在BLLP阶段完成发送，则需要在每一帧的最后一行结束后来发送。在这种情况下，最后一行的时间会被拉长，video mode中HLINE的实际总时间和设定的不一致了，需要通过edpihalt信号告诉Display controller暂时不要开始下一帧，防止两边出现速度不匹配，从而导致FIFO overflow的情况。
@@ -2178,7 +2178,7 @@ eDPI interface运行在video mode时，可以选择以HS或LP状态发送command
 
 **图 11-13：edpihalt in video mode**
 
-![图 11-13]( images/display-controller/image_11-13.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_90.emf) -->
 
 
 ## Adapted Command Mode
@@ -2188,7 +2188,7 @@ eDPI interface运行在video mode时，可以选择以HS或LP状态发送command
 
 **图 11-14：eDPI Adapted Command Mode waveform**
 
-![图 11-14]( images/display-controller/image_11-14.png)
+![图 11-14](images/display-controller/image_91.png)
 
 
 dpivsync_edpiwms高电平期间，pixel data 通过EDPI interface进入DSI Controller内部，每通过1个Pixel，Counter加1；
@@ -2216,7 +2216,7 @@ tear effect的request可以通过软件和硬件的方式来触发，这里只�
 
 **图 11-15：eDPI Adapted Command Mode tear effect**
 
-![图 11-15]( images/display-controller/image_11-15.png)
+![图 11-15](images/display-controller/image_92.png)
 
 
 ### edpite的特殊要求
@@ -2224,7 +2224,7 @@ tear effect的request可以通过软件和硬件的方式来触发，这里只�
 
 **图 11-16：DSI下返回tear signal的方式**
 
-![图 11-16]( images/display-controller/image_11-16.png)
+![图 11-16](images/display-controller/image_93.png)
 
 
 根据DSI中返回tear的方式，tear event是在LP Escape mode下通过Display Panel的LP-Tx发送出来的，然后由host processor的LP-RX来接收。当host processor的LP-RX在工作时，所依据的时钟为rxclkesc，接收回来的tear event体现在PPI的Rxtriggeresc[3:0]数据线上。根据DW DSI RTL code中的做法，会在rxclkesc clock domain下根据Rxtriggeresc[3:0]的数据产生一个当前是否有tear返回的signal，然后通过DPI clock去sample这条signal，以此来确定edpite signal的值。
@@ -2242,7 +2242,7 @@ edpihalt在command mode下用于确保DSI中的eDPI Command FIFO和Payload FIFO�
 
 **图 11-17：eDPI Adapted Command Mode halt wareform**
 
-![图 11-17]( images/display-controller/image_11-17.png)
+![图 11-17](images/display-controller/image_94.png)
 
 
 ## Clock divider in eDPI interface
@@ -2262,7 +2262,7 @@ eDPI interface所选用的除频source为display clock，通常设置为200MHz�
 
 **图 11-18：DW DSI 屏幕相关参数举例说明**
 
-![图 11-18]( images/display-controller/image_11-18.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_95.emf) -->
 
 
 这里以DW DSI中支持的某个320*240的屏幕参数为基础，举例说明video mode下除频参数的设定。
@@ -2320,7 +2320,7 @@ TOTALH[10:0]	: 下图中F点的纵坐标，间接确定VFP的大小，TOTALH[10:
 
 **图 11-19：eDPI Video Mode 屏幕相关参数说明**
 
-![图 11-19]( images/display-controller/image_11-19.png)
+<!-- 图片格式为 EMF，暂不支持显示 (image_96.emf) -->
 
 
 ### Signal Polarity(REG EDPI_SYNC_POL)
@@ -2398,7 +2398,7 @@ VDES			：如下图，当前位置为AREA2、Active Area 、AREA4内时，dpi_VD
 
 **图 11-20：eDPI Video Mode SYNC、DE信号说明**
 
-![图 11-20]( images/display-controller/image_11-20.png)
+![图 11-20](images/display-controller/image_97.png)
 
 
 dpi_HDE和dpi_VDE共同确定了信号dpidataen，dpi_HDE为1表示横向位置在Active Area区域内，dpi_VDE为1表示纵向位置在Active Area区域内。只有dpi_HDE和dpi_VDE均为1，则表示当前位置具有实际的piexel data，则dpidataen为Active。
@@ -2420,7 +2420,7 @@ These bits configure the pixel color map
 
 **图 11-21：eDPI RGB color map(dpidata signals)**
 
-![图 11-21]( images/display-controller/image_11-21.png)
+![图 11-21](images/display-controller/image_98.png)
 
 
 ### operating mode
@@ -2611,7 +2611,7 @@ DPI output可以认为是将eDPI output video mode单独引出来，直接以并
 
 **图 12-1：增加line buffer后的Display Controller框架图**
 
-![图 12-1]( images/display-controller/image_12-1.png)
+![图 12-1](images/display-controller/image_99.png)
 
 
 DPI interface直接驱动RGB屏幕，需要DPI发出持续稳定的数据流。考虑到DPI的上游Display Controller的data是通过DMAC从PSRAM中搬运来的，而DMAC可能会出现短时间内无法获取AXI bus 控制权，从而导致数据流产生短时中断的问题。
