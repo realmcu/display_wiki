@@ -1097,7 +1097,7 @@ block cnt clear
 硬件会在每次Tx-len结束时将Group1和Group2的新的source address载入，等下一次Tx-len开始运行是生效。预填source address的register分别为GRP1_SAR_FOR_INFINITE_MODE和GRP2_SAR_FOR_INFINITE_MODE。
 
 
-# DBI-C (SPIC) output
+## DBI-C (SPIC) output
 
 以下为MIPI DBI Specification中Type C标准interface。
 
@@ -1667,7 +1667,7 @@ CTRLR2[3]设置为0，表示Rx read FIFO时为INCR
 根据DV验证的结果，目前SPIC只支持SCPOL與SCPH需設成皆為0或1，即只支持以下mode中的mode0和mode3
 
 
-# MIPI DBI-B output
+## MIPI DBI-B output
 
 参考Sbee2 I8080 design
 
@@ -1977,7 +1977,7 @@ disable display controller，寄存器INTERFACE_SELECT bit[0]；
 
 至此，当前mode或interface已完全停止，可进行mode或interface切换
 
-# MIPI eDPI Output
+## MIPI eDPI Output
 
 ### General Description
 
@@ -2601,7 +2601,7 @@ stop flow及mode切换：
 disable display controller，寄存器INTERFACE_SELECT bit[0]；
 
 
-# DPI output
+## DPI output
 
 DPI output可以认为是将eDPI output video mode单独引出来，直接以并行数据的形式驱动RGB屏幕。因此与eDPI interface的video mode共享signal和register。eDPI command mode中使用的interface和signal将被忽略。
 
