@@ -8,6 +8,7 @@
 display-specs
 driver-chips
 interface
+display-controller
 2d-vs-3d-gpu
 gpu-overview
 psram-bandwidth
