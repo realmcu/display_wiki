@@ -2,3 +2,12 @@
 site/
 *.pyc
 __pycache__/
+
+# 临时文件
+*.docx
+input.txt
+extract_docx.py
+
+# 技能包
+skills/
+dist/
