@@ -13,4 +13,5 @@ display-controller
 gpu-overview
 psram-bandwidth
 camera-analysis
+buffer-rotation
 ```
