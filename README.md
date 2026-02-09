@@ -6,7 +6,7 @@
 
 ### 一键启动（推荐）
 ```bash
-git clone https://gitee.com/realmcu_admin/display_wiki.git
+git clone git@github.com:realmcu/display_wiki.git
 cd display_wiki
 ./quickstart.sh        # 默认端口 8080
 ./quickstart.sh 9000   # 指定端口 9000
@@ -22,7 +22,7 @@ cd display_wiki
 
 #### 1. 克隆仓库
 ```bash
-git clone https://gitee.com/realmcu_admin/display_wiki.git
+git clone git@github.com:realmcu/display_wiki.git
 cd display_wiki
 ```
 
