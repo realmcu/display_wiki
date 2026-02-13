@@ -7,6 +7,7 @@
 
 display-specs
 driver-chips
+il79400a-datasheet
 interface
 display-controller
 2d-vs-3d-gpu
