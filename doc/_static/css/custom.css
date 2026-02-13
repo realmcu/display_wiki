@@ -201,9 +201,6 @@ div.wy-menu-vertical {
 li[class*="toctree-"] * {
     font-size: 14px !important;
 }
-.always-expand-toc button::before {
-    content: "\f147" !important;
-}
 
 .wy-menu-vertical li[class*="toctree-"].current,
 .wy-menu-vertical li[class*="toctree-"].current > a,

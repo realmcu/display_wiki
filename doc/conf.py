@@ -3,6 +3,13 @@ import os
 import sys
 from datetime import datetime
 
+html_context = {
+    'current_year': datetime.now().year,
+    "show_sphinx": False,
+    # 左侧目录栏的拖拽宽度配置
+    "left_nav_width": "docs.displaywiki.sidebar.width",
+}
+
 project = 'Display Wiki'
 author = 'Display Wiki'
 release = 'v0.1'
@@ -43,12 +50,13 @@ html_css_files = [
 
 html_js_files = [
     'js/pdf-viewer.js',
+    'js/custom.js',
 ]
 
 html_theme_options = {
-    'collapse_navigation': True,
+    'collapse_navigation': False,
     'logo_only': True,
-    'navigation_depth': 10,
+    'navigation_depth': 4,
     'sticky_navigation': True,
     'includehidden': True,
     'titles_only': False,
