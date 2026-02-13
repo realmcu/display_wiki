@@ -8,6 +8,7 @@
 display-specs
 driver-chips
 interface
+mipi-dsi
 display-controller
 2d-vs-3d-gpu
 gpu-overview

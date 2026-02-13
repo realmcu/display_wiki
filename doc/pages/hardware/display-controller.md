@@ -7,132 +7,181 @@
 
 ---
 
-## Overview
+## 1. 概述
 
-### General Description
+### 1.1 功能描述
 
-Display Controller通过内部自带的DMA从RAM搬运至内部的handler FIFO。通过pixel converter将image转换为对应的pixel format，选择不同的interface将pixel输出。目前可以支持的interface如下：
+Display Controller 通过内部自带的 DMA 从 RAM 搬运数据至内部的 handler FIFO。通过 pixel converter 将 image 转换为对应的 pixel format，选择不同的 interface 将 pixel 输出。
 
-DBI-B interface
+### 1.2 支持的接口
 
-SPIC interface
+目前支持以下接口：
 
-DBI-C interface
+- **DBI-B interface**
+- **SPIC interface**
+- **DBI-C interface**
+- **QSPI interface**（114 & 144，DDR）
+- **OPI interface**（118 & 188，DDR）
+- **DPI interface**
+- **DSI interface**
+  - DSI video mode（burst mode & non-burst mode）
+  - DSI adapted command mode
 
-QSPI interface（114&144，DDR）
+### 1.3 控制接口
 
-OPI interface（118&188，DDR）
+- **APB interface**：用于控制寄存器读写访问
+- **AXI master read port**：用于 DMA 读取
 
-DPI interface
-
-DSI interface
-
-DSI video mode（burst mode&non-burst mode）
-
-DSI adapted command mode
-
-APB interface for control register R/W access，DMA read使用AXI master read port。
-
-
-**图 1-1：Display Controller Block图**
+**图 1-1：Display Controller 框图**
 
 <!-- 图片格式为 EMF，暂不支持显示 (image_1.emf) -->
 
+---
 
-### RESET补充描述
+## 2. 信号说明
 
-除了DBI-B，其他其他interface的标准signal中是不含有reset信号的。但是无论是连接MIPI DSI 还是连接SPIC的LCD Panel，均单独单独含有Reset input signal，以方便初始化LCD panel。因此选择从Display Controller handler的位置引出Reset output signal连接至LCD Panel，并且通过寄存器由用户直接控制。
+### 2.1 RESET 信号
 
-### TE补充描述
+除了 DBI-B，其他 interface 的标准信号中不含有 reset 信号。但无论是连接 MIPI DSI 还是连接 SPIC 的 LCD Panel，均单独含有 Reset input signal，以方便初始化 LCD panel。
 
-支持DBI-B和SPIC interface 的LCD panel均有TE信号直接返回，因此直接将LCD 中的TE连接至Display Controller中的TE引脚即可。
+因此选择从 Display Controller handler 的位置引出 Reset output signal 连接至 LCD Panel，并且通过寄存器由用户直接控制。
 
-支持MIPI DSI interface的LCD panel通常含有两种TE返回方式，一种是直接通过LCD中的TE引脚来返回tear message（高低电平）。另一种是通过data lane0来返回tear message，然后在DSI中产生TE，进而连接至Display Controller；询问Display Driver厂商后得知，通常这两种方式均支持且同时运行。硬件设计中会通过Tear_Input_Mux来选择使用哪种方式返回的tear signal。
+### 2.2 TE 信号
 
-### APB 补充描述
+#### DBI-B 和 SPIC 接口
 
-上述block图中的APB bus并不是真正的APB bus，而是将系统的APB bus经过Asynchronous brdige之后的bus。经过asynchronous bridge之后，bus clock和display clock被合并，因此对于display controller而言，APB bus clock和display clock是同一个时钟信号，通常为200MHz，用于display controller内部的分频的clock source和register access clock。
+支持 DBI-B 和 SPIC interface 的 LCD panel 均有 TE 信号直接返回，因此直接将 LCD 中的 TE 连接至 Display Controller 中的 TE 引脚即可。
 
-## 数据流向-Tx（auto）
+#### MIPI DSI 接口
 
-在auto Tx mode下，Pixel数据流向通常为data RAMDMAhandler FIFOPixel converter（DPI interface下需要过line buffer）各个interface。在DBI-B、SPIC、DPI interface后直接连接display panel。而eDPI interface后经过DW DSI Host controller、D-PHY后再连接至display panel。
+支持 MIPI DSI interface 的 LCD panel 通常含有两种 TE 返回方式：
 
+1. **直接通过 LCD 中的 TE 引脚**返回 tear message（高低电平）
+2. **通过 data lane0** 返回 tear message，然后在 DSI 中产生 TE，进而连接至 Display Controller
+
+询问 Display Driver 厂商后得知，通常这两种方式均支持且同时运行。硬件设计中会通过 Tear_Input_Mux 来选择使用哪种方式返回的 tear signal。
+
+### 2.3 APB 总线
+
+上述 block 图中的 APB bus 并不是真正的 APB bus，而是将系统的 APB bus 经过 Asynchronous bridge 之后的 bus。
+
+经过 asynchronous bridge 之后，bus clock 和 display clock 被合并，因此对于 display controller 而言，APB bus clock 和 display clock 是同一个时钟信号，通常为 **200MHz**，用于：
+
+- Display controller 内部的分频 clock source
+- Register access clock
+
+---
+
+## 3. 数据流向
+
+### 3.1 Tx 数据流向（auto 模式）
+
+在 auto Tx mode 下，Pixel 数据流向：
+
+```
+Data RAM → DMA → Handler FIFO → Pixel Converter → Interface → Display Panel
+```
+
+**注意**：DPI interface 下需要经过 line buffer。
+
+- **DBI-B、SPIC、DPI interface**：直接连接 display panel
+- **eDPI interface**：经过 DW DSI Host controller、D-PHY 后再连接至 display panel
 
 **图 1-2：Display Controller Tx 数据流向**
 
 ![图 1-2](images/display-controller/image_2.png)
 
+### 3.2 Rx 数据流向（auto 模式）
 
-## 数据流向-Rx（auto）
+#### DBI-B auto Rx mode
 
-当使用DBI-B auto Rx mode时，Received data数据流向通常为DBI-B interface handler FIFOCPU通过APB读取handler FIFO。
+Received data 数据流向：
 
+```
+DBI-B Interface → Handler FIFO → CPU 通过 APB 读取
+```
 
 **图 1-3：Display Controller DBI-B Rx 数据流向**
 
 ![图 1-3](images/display-controller/image_3.png)
 
+#### SPIC user mode Rx
 
-当使用SPIC user mode Rx时，Received data直接存储在SPIC interface 的Rx FIFO中，而不会返回handler FIFO。user需要将AXI mux切换为FW mode，通过APB interface直接读取SPIC Rx FIFO中的值。
+Received data 直接存储在 SPIC interface 的 Rx FIFO 中，不会返回 handler FIFO。
 
-当使用eDPI Rx时，Received data直接存储在DW DSI Host Controller的Generic FIFO中，不会返回handler中的FIFO。user可以直接通过APB interface读取DW DSI Host Controller FIFO中的数据。
+用户需要：
+1. 将 AXI mux 切换为 FW mode
+2. 通过 APB interface 直接读取 SPIC Rx FIFO 中的值
 
+#### eDPI Rx
 
-## Feature List
+Received data 直接存储在 DW DSI Host Controller 的 Generic FIFO 中，不会返回 handler 中的 FIFO。
 
-Display Controller 包含如下Feature
+用户可以直接通过 APB interface 读取 DW DSI Host Controller FIFO 中的数据。
 
-支持DMA one channel
+---
 
-支持AXI master DMA read pixel data，single block、muti-block中的contiguous、auto_reload和link list。
+## 4. 功能特性
 
-支持DMA infinite mode（连续搬运），multi-block link list下使用infinite mode时支持每一帧修改source address
+### 4.1 DMA 功能
 
-支持link list module根据offset值和source address等自动生成link list
+- ✅ 支持 DMA one channel
+- ✅ 支持 AXI master DMA read pixel data
+  - Single block
+  - Multi-block（contiguous、auto_reload、link list）
+- ✅ 支持 DMA infinite mode（连续搬运）
+- ✅ Multi-block link list 下使用 infinite mode 时支持每一帧修改 source address
+- ✅ 支持 link list module 根据 offset 值和 source address 等自动生成 link list
 
-支持RGB pixel format convert
+### 4.2 像素格式转换
 
-支持Tear effect signal
+- ✅ 支持 RGB pixel format convert
+- ✅ 支持 Tear effect signal
 
-支持 DBI Type B interface(max 50MHz)
+### 4.3 DBI Type B Interface
 
-支持mannual mode和auto mode
+- **最大频率**：50MHz
+- **模式**：
+  - Manual mode
+  - Auto mode
+  - Tx 和 Rx
 
-支持Tx和Rx
+### 4.4 SPIC Interface
 
-支持SPIC interface(max 100MHz)
+- **最大频率**：100MHz
+- **模式**：
+  - HW mode Tx
+  - FW mode Tx 和 Rx
+- **支持协议**：
+  - DBI-C option 3
+  - QSPI（114/144）
+  - OPI（188/118）
+- **DDR 支持**：Tx 下支持 QSPI 和 OPI 下的 DDR
+- **相位调整**：Tx 下支持 spiclk 后续加 PHY 来调整相位和偏移
 
-支持HW mode Tx
+### 4.5 DPI Interface
 
-支持FW mode Tx和Rx
+- ✅ 内部配置 line buffer
+- ✅ 支持 video mode type4 架构
+- ✅ 支持 SD 和 CM
 
-支持DBI-C option 3、QSPI（114/144）、OPI（188/118）
+### 4.6 MIPI DSI Interface
 
-Tx下支持QSPI和OPI下的DDR
+- **最大频率**：65MHz（D-PHY 为 1GHz per lane）
+- **Data lane 数量**：1 或 2
+- **模式**：
+  - Video mode
+  - Adapted command mode
+- **速度模式**：
+  - HS（High Speed）
+  - LP（Low Power）
+- **架构**：Video mode 下支持 type4 架构
 
-Tx下支持spiclk后续加PHY来调整相位和偏移
+---
 
-支持DPI interace
+## 5. 接口选择
 
-内部配置line buffer
-
-支持video mode type4架构
-
-支持SD和CM
-
-支持MIPI DSI(max 65MHz,D-PHY为1GHz per lane)
-
-支持data lane number为1或2
-
-支持video mode或adapted command mode
-
-支持HS和LP
-
-video mode下支持type4架构
-
-## interface select
-
-## interface select与内部PIN MUX
+### 5.1 接口选择与内部 PIN MUX
 
 目前Display Controller总共支持四种interface的输出，DBI-B、SPIC、DPI和MIPI DSI，如果将各个interface全部引出，则需要大量的PIN脚，会对IC封装造成很大的难度，因此此次选择内部PIN MUX方案来对以上四种interface的signal做处理。
 
