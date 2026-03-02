@@ -126,3 +126,8 @@ GPU的数据处理流程主要包括以下几个阶段：
 - **Vulkan**：现代低开销 3D API
 - **DirectX**：Windows 平台的图形 API
 - **Metal**：Apple 平台的图形 API
+
+## 4. 扩展阅读
+
+- **[GPU 内存开销分析](gpu-memory-overhead.md)**: 详细分析 2D/2.5D/3D GPU 渲染管线各阶段的内存需求、带宽计算和优化策略，为系统架构设计提供量化参考。
+- **[2D/2.5D/3D GPU 技术对比](2d-vs-3d-gpu.md)**: 从芯片设计角度对比三类 GPU 的硬件架构、总线需求和系统集成。

@@ -10,6 +10,7 @@ Display Wiki 是一个显示技术文档站点，提供硬件平台、软件开�
    pages/quickstart/index
    pages/hardware/index
    pages/software/index
+   pages/gpu/index
    pages/applications/index
    pages/faq/index
 
